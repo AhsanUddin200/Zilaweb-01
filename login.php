@@ -6,7 +6,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = $_POST['email'];
     $password = $_POST['password'];
 
-    // SQL Injection se bachne ke liye prepared statement use karo
     $stmt = $conn->prepare("SELECT * FROM users WHERE email = ?");
     $stmt->bind_param("s", $email);
     $stmt->execute();
@@ -14,12 +13,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     if ($result->num_rows > 0) {
         $user = $result->fetch_assoc();
-
-        // Plain text password match
-        if ($password === $user['password']) { // If password is not hashed
+        if ($password === $user['password']) {
             $_SESSION['user'] = $user;
-
-            // Admin ko `admin.php` par redirect karo, baaki logon ko `dashboard.php`
             if ($user['role'] === 'admin') {
                 header("Location: admin.php");
             } else {
