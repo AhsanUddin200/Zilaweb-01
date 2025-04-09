@@ -6,11 +6,63 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
     exit();
 }
 
-// Your existing form handling code here
+// Define areas
+// Update the areas array
+$areas = [
+    'sohran_goth' => 'Sohran Goth',
+    'lassi_goth' => 'Lassi Goth',
+    'gulshan_maymar' => 'Gulshan Maymar',
+    'jhanjar_goth' => 'Jhanjar Goth',
+    'gadap' => 'Gadap',
+    'bahria' => 'Bahria',
+    'ahsan_abad' => 'Ahsan Abad'
+];
+
+// Get count of karkunan for each area
+$area_counts = [];
+foreach ($areas as $key => $name) {
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM karkunan WHERE area = ?");
+    $stmt->bind_param("s", $key);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $area_counts[$key] = $result->fetch_assoc()['count'];
+}
+
+// Handle form submission
+// Update the form tag to include enctype
+echo '<form method="POST" enctype="multipart/form-data">';
+
+// Add this to your PHP section after the existing POST handler
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (isset($_POST['add_karkun'])) {
-        $stmt = $conn->prepare("INSERT INTO karkunan (name, father_name, age, marital_status, address, cnic, education, source_of_income, responsibility) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("ssissssss", 
+    if (isset($_FILES['csv_file']) && $_FILES['csv_file']['size'] > 0) {
+        $file = $_FILES['csv_file']['tmp_name'];
+        
+        if (($handle = fopen($file, "r")) !== FALSE) {
+            // Skip header row
+            fgetcsv($handle);
+            
+            while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+                $stmt = $conn->prepare("INSERT INTO karkunan (name, father_name, age, marital_status, address, cnic, education, source_of_income, responsibility, area) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->bind_param("ssisssssss", 
+                    $data[0],  // name
+                    $data[1],  // father_name
+                    $data[2],  // age
+                    $data[3],  // marital_status
+                    $data[4],  // address
+                    $data[5],  // cnic
+                    $data[6],  // education
+                    $data[7],  // source_of_income
+                    $data[8],  // responsibility
+                    $_POST['area']
+                );
+                $stmt->execute();
+            }
+            fclose($handle);
+            echo "<script>alert('CSV data imported successfully!');</script>";
+        }
+    } elseif (isset($_POST['add_karkun'])) {
+        $stmt = $conn->prepare("INSERT INTO karkunan (name, father_name, age, marital_status, address, cnic, education, source_of_income, responsibility, area) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("ssisssssss", 
             $_POST['name'],
             $_POST['father_name'],
             $_POST['age'],
@@ -19,14 +71,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_POST['cnic'],
             $_POST['education'],
             $_POST['source_of_income'],
-            $_POST['responsibility']
+            $_POST['responsibility'],
+            $_POST['area']
         );
         $stmt->execute();
     }
 }
 
-$result = $conn->query("SELECT * FROM karkunan ORDER BY created_at DESC");
-$karkunan = $result->fetch_all(MYSQLI_ASSOC);
+// Add this JavaScript at the bottom of your file before </body>
+// Remove this duplicate code block
+// if (isset($_POST['add_karkun'])) {
+//     $stmt = $conn->prepare("INSERT INTO karkunan...");
+//     $stmt->bind_param("ssisssssss", ...);
+//     $stmt->execute();
+// }
+
+// Get selected area
+$selected_area = isset($_GET['area']) ? $_GET['area'] : '';
+
+// Fetch karkunan data if area is selected
+$karkunan = [];
+if ($selected_area) {
+    $stmt = $conn->prepare("SELECT * FROM karkunan WHERE area = ? ORDER BY created_at DESC");
+    $stmt->bind_param("s", $selected_area);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $karkunan = $result->fetch_all(MYSQLI_ASSOC);
+}
 ?>
 
 <!DOCTYPE html>
@@ -34,37 +105,680 @@ $karkunan = $result->fetch_all(MYSQLI_ASSOC);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Karkunan Management - One Tap Zila</title>
+    <title>Karkunan Management - Digital Jamat</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-    <!-- Your existing CSS styles here -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        /* Copy all your existing styles from admin.php */
-        /* Add this new style for the back button */
-        .back-btn {
-            display: inline-block;
-            padding: 10px 20px;
-            background-color: #006600;
+        /* Global Styles Update */
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            min-height: 100vh;
+        }
+
+        /* Enhanced Navbar */
+        .navbar {
+            background: linear-gradient(90deg, #006600 0%, #008800 100%);
+            padding: 12px 40px;
+            box-shadow: 0 4px 20px rgba(0,102,0,0.15);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar h1 {
+            font-size: 24px;
+            font-weight: 600;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            color: white;
+            margin: 0;
+        }
+        
+
+        .detail-btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 20px;
+            background: rgba(255,255,255,0.15);
+            color: white;
+            font-weight: 500;
+            border-radius: 30px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .detail-btn:hover {
+            background: rgba(255,255,255,0.25);
+            transform: translateY(-2px);
+        }
+
+        .navbar-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logout-btn {
+            background: rgba(255,255,255,0.15);
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-weight: 500;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
             color: white;
             text-decoration: none;
-            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.25);
+            transform: translateY(-2px);
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 20px;
+            background: rgba(255,255,255,0.15);
+            color: white;
+            font-weight: 500;
+            border-radius: 30px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .back-btn:hover {
+            background: rgba(255,255,255,0.25);
+            transform: translateY(-2px);
+        }
+
+        /* Improved Area Cards Grid */
+        .areas-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 35px;
+            padding: 40px;
+            max-width: 1400px;
+            margin: 40px auto;
+        }
+
+        .area-card {
+            background: white;
+            border-radius: 24px;
+            padding: 35px 30px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid rgba(0,102,0,0.08);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .area-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(0,102,0,0.05) 0%, rgba(0,136,0,0.05) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .area-card:hover {
+            transform: translateY(-12px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0,102,0,0.12);
+            border-color: #006600;
+        }
+
+        .area-card:hover::after {
+            opacity: 1;
+        }
+
+        .area-card i {
+            font-size: 64px;
+            background: linear-gradient(135deg, #006600 0%, #008800 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 25px;
+            transition: all 0.4s ease;
+        }
+
+        .area-card:hover i {
+            transform: scale(1.15) translateY(-5px);
+        }
+
+        .count-badge {
+            background: linear-gradient(135deg, #e8f5e8 0%, #d1e7d1 100%);
+            color: #006600;
+            padding: 10px 25px;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 25px;
+            display: inline-block;
+            border: 1px solid rgba(0,102,0,0.1);
+            box-shadow: 0 4px 15px rgba(0,102,0,0.05);
+            transition: all 0.3s ease;
+        }
+
+        .area-card:hover .count-badge {
+            background: linear-gradient(135deg, #006600 0%, #008800 100%);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 6px 20px rgba(0,102,0,0.15);
+        }
+
+        .area-card h3 {
+            color: #006600;
+            font-size: 26px;
+            font-weight: 600;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .area-card:hover h3 {
+            transform: scale(1.05);
+        }
+
+        /* Back Button Enhancement */
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #006600 0%, #008800 100%);
+            color: white;
+            font-weight: 500;
+            border-radius: 50px;
+            margin: 30px 0;
+            box-shadow: 0 4px 15px rgba(0,102,0,0.15);
+        }
+
+        .back-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,102,0,0.2);
+        }
+
+        /* Container Enhancement */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px 40px;
+        }
+
+        /* Responsive Improvements */
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 15px 20px;
+            }
+            
+            .areas-grid {
+                grid-template-columns: 1fr;
+                gap: 25px;
+                padding: 20px;
+            }
+            
+            .area-card {
+                padding: 30px 25px;
+            }
+            
+            .container {
+                padding: 15px;
+            }
+        }
+
+        /* Form Styling */
+        .form-container {
+            max-width: 900px;
+            margin: 30px auto;
+            padding: 30px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.08);
+        }
+
+        .form-tabs {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+        }
+
+        .tab-btn {
+            padding: 12px 25px;
+            background: #f5f5f5;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            color: #666;
+        }
+
+        .tab-btn.active {
+            background: #006600;
+            color: white;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
             margin-bottom: 20px;
         }
-        .back-btn:hover {
-            background-color: #004d00;
+
+        .form-group {
+            margin-bottom: 20px;
         }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #444;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            border-color: #006600;
+            box-shadow: 0 0 0 3px rgba(0,102,0,0.1);
+            outline: none;
+        }
+
+        /* CSV Upload Section */
+        .csv-container {
+            background: #f8f9f8;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .csv-info {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .csv-info h3 {
+            color: #006600;
+            margin-bottom: 15px;
+        }
+
+        .csv-info ul {
+            text-align: left;
+            margin: 15px 0;
+            padding-left: 20px;
+            color: #555;
+        }
+
+        .file-upload {
+            border: 2px dashed #006600;
+            padding: 40px;
+            border-radius: 12px;
+            background: white;
+            transition: all 0.3s ease;
+            margin: 20px 0;
+        }
+
+        .file-upload.highlight {
+            background: #f0f4f0;
+            border-color: #008800;
+            transform: scale(1.02);
+        }
+
+        .file-label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+        }
+
+        .file-label i {
+            font-size: 48px;
+            color: #006600;
+            transition: transform 0.3s ease;
+        }
+
+        .file-label:hover i {
+            transform: translateY(-5px);
+        }
+
+        /* Submit Button */
+        .submit-btn {
+            background: #006600;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+            width: 100%;
+        }
+
+        .submit-btn:hover {
+            background: #008800;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,102,0,0.2);
+        }
+
+        /* Table Styling */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-top: 30px;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.08);
+        }
+
+        /* View Details Button */
+        .view-details-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            padding: 15px 35px;
+            background: linear-gradient(135deg, #006600 0%, #008800 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,102,0,0.15);
+            margin: 20px auto;
+        }
+
+        .view-details-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,102,0,0.2);
+            background: linear-gradient(135deg, #008800 0%, #009900 100%);
+        }
+
+        .view-details-btn i {
+            font-size: 18px;
+        }
+
+        @media (max-width: 768px) {
+            .view-details-btn {
+                padding: 12px 25px;
+                font-size: 14px;
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .areas-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-container {
+                padding: 20px;
+            }
+
+            table {
+                display: block;
+                overflow-x: auto;
+            }
+            
+        }
+        
     </style>
 </head>
 <body>
     <div class="navbar">
         <h1>Karkunan Management</h1>
-        <a href="logout.php" class="logout-btn">Logout</a>
+        <div class="navbar-right">
+            <a href="karkundetail.php" class="detail-btn">All Karkunan</a>
+            <a href="admin.php" class="back-btn">Back to Dashboard</a>
+            <a href="logout.php" class="logout-btn">Logout</a>
+        </div>
     </div>
 
     <div class="container">
-        <a href="admin.php" class="back-btn">Back to Dashboard</a>
+        <!-- Remove the back button from here since it's now in navbar -->
+        <?php if (!$selected_area): ?>
+        <!-- Show area cards if no area is selected -->
+        <div class="areas-grid">
+            <?php foreach ($areas as $key => $name): ?>
+            <a href="?area=<?php echo $key; ?>" class="area-card">
+                <div class="count-badge">
+                    <?php echo $area_counts[$key]; ?> Karkunan
+                </div>
+                <i class="fas fa-map-marker-alt"></i>
+                <h3><?php echo $name; ?></h3>
+            </a>
+            <?php endforeach; ?>
+        </div>
         
-        <!-- Your existing form and table code here -->
-        <!-- Copy everything from the container div of your original admin.php -->
+        <?php else: ?>
+        <!-- Show form and table if area is selected -->
+        <h2><?php echo $areas[$selected_area]; ?> - Add New Karkun</h2>
+        <div class="form-container">
+            <form method="POST">
+                <input type="hidden" name="area" value="<?php echo $selected_area; ?>">
+                
+                <!-- Add this right after the form's opening tag -->
+                <div class="form-tabs">
+                    <button type="button" class="tab-btn active" onclick="showTab('manual')">Manual Entry</button>
+                    <button type="button" class="tab-btn" onclick="showTab('csv')">CSV Upload</button>
+                </div>
+
+                <div id="manual-form" class="tab-content active">
+                    <!-- Existing form fields with additions -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Name:</label>
+                            <input type="text" name="name" required placeholder="Enter full name">
+                        </div>
+                        <div class="form-group">
+                            <label>Father's Name:</label>
+                            <input type="text" name="father_name" required placeholder="Enter father's name">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Age:</label>
+                            <input type="number" name="age" required min="18" max="100">
+                        </div>
+                        <div class="form-group">
+                            <label>Date of Birth:</label>
+                            <input type="date" name="dob" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Marital Status:</label>
+                            <select name="marital_status" required>
+                                <option value="">Select Status</option>
+                                <option value="Single">Single</option>
+                                <option value="Married">Married</option>
+                                <option value="Widowed">Widowed</option>
+                                <option value="Divorced">Divorced</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Blood Group:</label>
+                            <select name="blood_group" required>
+                                <option value="">Select Blood Group</option>
+                                <option value="A+">A+</option>
+                                <option value="A-">A-</option>
+                                <option value="B+">B+</option>
+                                <option value="B-">B-</option>
+                                <option value="O+">O+</option>
+                                <option value="O-">O-</option>
+                                <option value="AB+">AB+</option>
+                                <option value="AB-">AB-</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Address:</label>
+                        <textarea name="address" required rows="3" placeholder="Enter complete address"></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>CNIC:</label>
+                            <input type="text" name="cnic" required pattern="\d{5}-\d{7}-\d" placeholder="00000-0000000-0">
+                        </div>
+                        <div class="form-group">
+                            <label>Mobile Number:</label>
+                            <input type="tel" name="mobile" required pattern="03\d{2}-\d{7}" placeholder="0300-0000000">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Education:</label>
+                            <input type="text" name="education" required placeholder="Latest education">
+                        </div>
+                        <div class="form-group">
+                            <label>Profession:</label>
+                            <input type="text" name="profession" required placeholder="Current profession">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Source of Income:</label>
+                        <input type="text" name="source_of_income" required placeholder="Primary source of income">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Responsibility:</label>
+                        <select name="responsibility" required>
+                            <option value="">Select Responsibility</option>
+                            <option value="Nazim">Nazim</option>
+                            <option value="Naib Nazim">Naib Nazim</option>
+                            <option value="Member">Member</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="csv-upload" class="tab-content">
+                    <div class="csv-container">
+                        <div class="csv-info">
+                            <h3>CSV Upload Instructions</h3>
+                            <p>Please ensure your CSV file has the following columns:</p>
+                            <ul>
+                                <li>Name, Father's Name, Age, Marital Status, CNIC, Education, Responsibility</li>
+                            </ul>
+                            <a href="templates/karkunan_template.csv" download class="template-btn">Download Template</a>
+                        </div>
+                        <div class="file-upload">
+                            <input type="file" name="csv_file" id="csv_file" accept=".csv" class="file-input">
+                            <label for="csv_file" class="file-label">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <span>Choose CSV file or drag it here</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" name="add_karkun" class="submit-btn">Add Karkun</button>
+            </form>
+        </div>
+
+       
+            <div style="text-align: center; margin-top: 30px; margin-bottom: 30px;">
+                <a href="karkundetail.php" class="view-details-btn">
+                    <i class="fas fa-list"></i>
+                    View All Karkunan List
+                </a>
+            </div>
+            <?php endif; ?>
+
     </div>
 </body>
 </html>
+
+
+<script>
+function showTab(tabName) {
+    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    
+    document.getElementById(tabName + '-form').classList.add('active');
+    event.currentTarget.classList.add('active');
+}
+
+// Add drag and drop functionality
+const fileUpload = document.querySelector('.file-upload');
+const fileInput = document.querySelector('.file-input');
+
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    fileUpload.addEventListener(eventName, preventDefaults, false);
+});
+
+function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+['dragenter', 'dragover'].forEach(eventName => {
+    fileUpload.addEventListener(eventName, highlight, false);
+});
+
+['dragleave', 'drop'].forEach(eventName => {
+    fileUpload.addEventListener(eventName, unhighlight, false);
+});
+
+function highlight(e) {
+    fileUpload.classList.add('highlight');
+}
+
+function unhighlight(e) {
+    fileUpload.classList.remove('highlight');
+}
+
+fileUpload.addEventListener('drop', handleDrop, false);
+
+function handleDrop(e) {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    fileInput.files = files;
+    
+    // Auto submit when file is dropped
+    if (files.length > 0 && files[0].type === 'text/csv') {
+        document.querySelector('form').submit();
+    }
+}
+
+// Handle file input change
+fileInput.addEventListener('change', function(e) {
+    if (this.files.length > 0) {
+        document.querySelector('form').submit();
+    }
+});
+</script>

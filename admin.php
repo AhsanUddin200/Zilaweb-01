@@ -236,7 +236,7 @@ if ($result) {
 </head>
 <body>
     <div class="navbar">
-        <h1>One Tap Zila Admin Dashboard</h1>
+        <h1>Digital Jamat Admin Dashboard</h1>
         <a href="logout.php" class="logout-btn">
             <i class="fas fa-sign-out-alt"></i> Logout
         </a>
