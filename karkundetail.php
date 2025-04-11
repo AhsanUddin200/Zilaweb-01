@@ -261,6 +261,7 @@ $total_count = count($karkunan);
             }
         }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     <div class="navbar">
@@ -318,6 +319,7 @@ $total_count = count($karkunan);
                     <th>CNIC</th>
                     <th>Education</th>
                     <th>Responsibility</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -332,10 +334,67 @@ $total_count = count($karkunan);
                     <td><?php echo htmlspecialchars($karkun['cnic']); ?></td>
                     <td><?php echo htmlspecialchars($karkun['education']); ?></td>
                     <td><?php echo htmlspecialchars($karkun['responsibility']); ?></td>
+                    <style>
+                        .action-buttons {
+                            display: flex;
+                            gap: 4px;
+                            white-space: nowrap;
+                        }
+
+                        .action-btn {
+                            padding: 5px 10px;
+                            border-radius: 4px;
+                            text-decoration: none;
+                            font-size: 12px;
+                            display: inline-flex;
+                            align-items: center;
+                            gap: 4px;
+                            transition: all 0.2s ease;
+                            color: white;
+                        }
+
+                        .action-btn:hover {
+                            transform: translateY(-1px);
+                            opacity: 0.9;
+                        }
+
+                        .view-btn { background: #0066cc; }
+                        .edit-btn { background: #006600; }
+                        .print-btn { background: #555555; }
+                        .delete-btn { background: #dc3545; }
+
+                        td .action-buttons {
+                            min-width: auto;
+                        }
+                    </style>
+                
+                    <td>
+                        <div class="action-buttons">
+                            <a href="view_karkun.php?id=<?php echo $karkun['id']; ?>" class="action-btn view-btn" title="View">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a href="edit_karkun.php?id=<?php echo $karkun['id']; ?>" class="action-btn edit-btn" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="download_karkun.php?id=<?php echo $karkun['id']; ?>" class="action-btn print-btn" title="Print">
+                                <i class="fas fa-print"></i>
+                            </a>
+                            <a href="#" onclick="deleteKarkun(<?php echo $karkun['id']; ?>)" class="action-btn delete-btn" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </div>
+                    </td>
                 </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
     </div>
+<script>
+        function deleteKarkun(id) {
+            if (confirm('Are you sure you want to delete this karkun?')) {
+                window.location.href = 'delete_karkun.php?id=' + id;
+            }
+        }
+    </script>
 </body>
 </html>
