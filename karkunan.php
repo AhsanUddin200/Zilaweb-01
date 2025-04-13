@@ -42,17 +42,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             fgetcsv($handle);
             
             while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
-                $stmt = $conn->prepare("INSERT INTO karkunan (name, father_name, age, marital_status, address, cnic, education, source_of_income, responsibility, area) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                $stmt->bind_param("ssisssssss", 
+                $stmt = $conn->prepare("INSERT INTO karkunan (name, father_name, gender, age, marital_status, address, cnic, education, source_of_income, responsibility, area) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->bind_param("sssississss", 
                     $data[0],  // name
                     $data[1],  // father_name
-                    $data[2],  // age
-                    $data[3],  // marital_status
-                    $data[4],  // address
-                    $data[5],  // cnic
-                    $data[6],  // education
-                    $data[7],  // source_of_income
-                    $data[8],  // responsibility
+                    $data[2],  // gender
+                    $data[3],  // age
+                    $data[4],  // marital_status
+                    $data[5],  // address
+                    $data[6],  // cnic
+                    $data[7],  // education
+                    $data[8],  // source_of_income
+                    $data[9],  // responsibility
                     $_POST['area']
                 );
                 $stmt->execute();
@@ -61,10 +62,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo "<script>alert('CSV data imported successfully!');</script>";
         }
     } elseif (isset($_POST['add_karkun'])) {
-        $stmt = $conn->prepare("INSERT INTO karkunan (name, father_name, age, marital_status, address, cnic, education, source_of_income, responsibility, area) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("ssisssssss", 
+        $stmt = $conn->prepare("INSERT INTO karkunan (name, father_name, name_relation, gender, age, marital_status, address, cnic, education, source_of_income, responsibility, area) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("ssssississss", 
             $_POST['name'],
             $_POST['father_name'],
+            $_POST['name_relation'],
+            $_POST['gender'],
             $_POST['age'],
             $_POST['marital_status'],
             $_POST['address'],
@@ -600,8 +603,26 @@ if ($selected_area) {
                             <input type="text" name="name" required placeholder="Enter full name">
                         </div>
                         <div class="form-group">
-                            <label>Father's Name:</label>
-                            <input type="text" name="father_name" required placeholder="Enter father's name">
+                            <label>Father's/Husband's Name:</label>
+                            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                                <label style="display: inline-flex; align-items: center; gap: 5px;">
+                                    <input type="radio" name="name_relation" value="father" checked>
+                                    Father's Name
+                                </label>
+                                <label style="display: inline-flex; align-items: center; gap: 5px;">
+                                    <input type="radio" name="name_relation" value="husband">
+                                    Husband's Name
+                                </label>
+                            </div>
+                            <input type="text" name="father_name" required placeholder="Enter father's/husband's name">
+                        </div>
+                        <div class="form-group">
+                            <label>Gender:</label>
+                            <select name="gender" required>
+                                <option value="">Select Gender</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                            </select>
                         </div>
                     </div>
 
@@ -693,7 +714,7 @@ if ($selected_area) {
                             <h3>CSV Upload Instructions</h3>
                             <p>Please ensure your CSV file has the following columns:</p>
                             <ul>
-                                <li>Name, Father's Name, Age, Marital Status, CNIC, Education, Responsibility</li>
+                                <li>Name, Father's/Husband's Name, Name Relation (father/husband), Gender, Age, Marital Status, CNIC, Education, Responsibility</li>
                             </ul>
                             <a href="templates/karkunan_template.csv" download class="template-btn">Download Template</a>
                         </div>

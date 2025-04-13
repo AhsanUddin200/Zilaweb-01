@@ -55,6 +55,16 @@ $karkunan = $result->fetch_all(MYSQLI_ASSOC);
 
 // Get total count
 $total_count = count($karkunan);
+
+// Get gender-wise counts
+$male_count_query = "SELECT COUNT(*) as count FROM karkunan WHERE gender = 'Male'";
+$female_count_query = "SELECT COUNT(*) as count FROM karkunan WHERE gender = 'Female'";
+
+$male_result = $conn->query($male_count_query);
+$female_result = $conn->query($female_count_query);
+
+$male_count = $male_result->fetch_assoc()['count'];
+$female_count = $female_result->fetch_assoc()['count'];
 ?>
 
 <!DOCTYPE html>
@@ -169,7 +179,8 @@ $total_count = count($karkunan);
 
         /* Stats Cards Styling */
         .stats {
-            display: flex;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px;
             margin-bottom: 30px;
         }
@@ -179,7 +190,7 @@ $total_count = count($karkunan);
             padding: 20px 25px;
             border-radius: 12px;
             box-shadow: 0 3px 15px rgba(0,0,0,0.08);
-            flex: 1;
+            text-align: center;
         }
 
         .stat-card h3 {
@@ -301,6 +312,14 @@ $total_count = count($karkunan);
                 <p><?php echo $total_count; ?></p>
             </div>
             <div class="stat-card">
+                <h3>Male Karkunan</h3>
+                <p style="color: #006600;"><?php echo $male_count; ?></p>
+            </div>
+            <div class="stat-card">
+                <h3>Female Karkunan</h3>
+                <p style="color: #FF69B4;"><?php echo $female_count; ?></p>
+            </div>
+            <div class="stat-card">
                 <h3>Most Active Area</h3>
                 <p><?php echo htmlspecialchars($max_area['area']) . ' (' . $max_area['count'] . ' karkunan)'; ?></p>
             </div>
@@ -313,6 +332,7 @@ $total_count = count($karkunan);
                     <th>Sr. No.</th>
                     <th>Name</th>
                     <th>Father's Name</th>
+                    <th>Gender</th>  <!-- Added gender column -->
                     <th>Age</th>
                     <th>Area</th>
                     <th>Marital Status</th>
@@ -324,10 +344,13 @@ $total_count = count($karkunan);
             </thead>
             <tbody>
                 <?php foreach ($karkunan as $index => $karkun): ?>
-                <tr>
+                <tr style="<?php echo $karkun['gender'] === 'Female' ? 'background-color: #FFF0F5;' : ''; ?>">
                     <td><?php echo $index + 1; ?></td>
                     <td><?php echo htmlspecialchars($karkun['name']); ?></td>
                     <td><?php echo htmlspecialchars($karkun['father_name']); ?></td>
+                    <td style="color: <?php echo $karkun['gender'] === 'Female' ? '#FF69B4' : 'inherit'; ?>">
+                        <?php echo htmlspecialchars($karkun['gender']); ?>
+                    </td>
                     <td><?php echo htmlspecialchars($karkun['age']); ?></td>
                     <td><?php echo htmlspecialchars($karkun['area']); ?></td>
                     <td><?php echo htmlspecialchars($karkun['marital_status']); ?></td>
@@ -372,6 +395,9 @@ $total_count = count($karkunan);
                         <div class="action-buttons">
                             <a href="view_karkun.php?id=<?php echo $karkun['id']; ?>" class="action-btn view-btn" title="View">
                                 <i class="fas fa-eye"></i>
+                            </a>
+                            <a href="karkunfamily.php?name=<?php echo urlencode($karkun['father_name']); ?>&address=<?php echo urlencode($karkun['address']); ?>" class="action-btn" style="background: #9933CC;" title="Family View">
+                                <i class="fas fa-users"></i>
                             </a>
                             <a href="edit_karkun.php?id=<?php echo $karkun['id']; ?>" class="action-btn edit-btn" title="Edit">
                                 <i class="fas fa-edit"></i>

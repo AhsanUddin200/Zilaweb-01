@@ -19,6 +19,7 @@ if ($id === 0) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = $_POST['name'];
     $father_name = $_POST['father_name'];
+    $gender = $_POST['gender'];  // Added gender
     $age = $_POST['age'];
     $area = $_POST['area'];
     $marital_status = $_POST['marital_status'];
@@ -29,6 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $query = "UPDATE karkunan SET 
               name = ?, 
               father_name = ?, 
+              gender = ?,
               age = ?, 
               area = ?, 
               marital_status = ?, 
@@ -38,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               WHERE id = ?";
 
     $stmt = $conn->prepare($query);
-    $stmt->bind_param("ssisssssi", $name, $father_name, $age, $area, $marital_status, $cnic, $education, $responsibility, $id);
+    $stmt->bind_param("sssisssssi", $name, $father_name, $gender, $age, $area, $marital_status, $cnic, $education, $responsibility, $id);
 
     if ($stmt->execute()) {
         header("Location: karkundetail.php?success=1");
@@ -227,6 +229,14 @@ if (!$karkun) {
                 <div class="form-group">
                     <label>Father's Name</label>
                     <input type="text" name="father_name" value="<?php echo htmlspecialchars($karkun['father_name']); ?>" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Gender</label>
+                    <select name="gender" required>
+                        <option value="Male" <?php echo $karkun['gender'] === 'Male' ? 'selected' : ''; ?>>Male</option>
+                        <option value="Female" <?php echo $karkun['gender'] === 'Female' ? 'selected' : ''; ?>>Female</option>
+                    </select>
                 </div>
 
                 <div class="form-group">
