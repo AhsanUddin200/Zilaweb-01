@@ -10,8 +10,13 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
 $search_name = isset($_GET['search_name']) ? $_GET['search_name'] : '';
 $search_area = isset($_GET['search_area']) ? $_GET['search_area'] : '';
 
+// Initialize query variables first
+$query = "SELECT * FROM karkunan WHERE 1=1";
+$params = [];
+$types = "";
+
 // Get all areas for dropdown
-$areas_query = "SELECT DISTINCT area FROM karkunan";
+$areas_query = "SELECT DISTINCT REPLACE(LOWER(area), ' ', '_') as area FROM karkunan";
 $areas_result = $conn->query($areas_query);
 $areas = [];
 while ($row = $areas_result->fetch_assoc()) {
@@ -19,14 +24,27 @@ while ($row = $areas_result->fetch_assoc()) {
 }
 
 // Get area with maximum karkunan
-$max_area_query = "SELECT area, COUNT(*) as count FROM karkunan GROUP BY area ORDER BY count DESC LIMIT 1";
+$max_area_query = "SELECT 
+    CASE 
+        WHEN area LIKE '%sohrab%goth%' THEN 'sohrab_goth'
+        WHEN area LIKE '%Sohrab%Goth%' THEN 'sohrab_goth'
+        ELSE LOWER(REPLACE(area, ' ', '_'))
+    END as standardized_area,
+    COUNT(*) as count 
+    FROM karkunan 
+    GROUP BY standardized_area 
+    ORDER BY count DESC 
+    LIMIT 1";
 $max_area_result = $conn->query($max_area_query);
 $max_area = $max_area_result->fetch_assoc();
 
-// Build the query with filters
-$query = "SELECT * FROM karkunan WHERE 1=1";
-$params = [];
-$types = "";
+// Add search conditions
+if (!empty($search_area)) {
+    $query .= " AND (REPLACE(LOWER(area), ' ', '_') = LOWER(?) OR area = ?)";
+    $params[] = $search_area;
+    $params[] = $search_area;
+    $types .= "ss";
+}
 
 if (!empty($search_name)) {
     $query .= " AND (name LIKE ? OR father_name LIKE ?)";
@@ -56,9 +74,18 @@ $karkunan = $result->fetch_all(MYSQLI_ASSOC);
 // Get total count
 $total_count = count($karkunan);
 
-// Get gender-wise counts
-$male_count_query = "SELECT COUNT(*) as count FROM karkunan WHERE gender = 'Male'";
-$female_count_query = "SELECT COUNT(*) as count FROM karkunan WHERE gender = 'Female'";
+// Get gender-wise counts - Modified to respect search conditions
+$base_condition = "1=1";
+if (!empty($search_area)) {
+    $base_condition .= " AND (REPLACE(LOWER(area), ' ', '_') = LOWER('$search_area') OR area = '$search_area')";
+}
+if (!empty($search_name)) {
+    $search_term = "%$search_name%";
+    $base_condition .= " AND (name LIKE '$search_term' OR father_name LIKE '$search_term')";
+}
+
+$male_count_query = "SELECT COUNT(*) as count FROM karkunan WHERE $base_condition AND gender = 'Male'";
+$female_count_query = "SELECT COUNT(*) as count FROM karkunan WHERE $base_condition AND gender = 'Female'";
 
 $male_result = $conn->query($male_count_query);
 $female_result = $conn->query($female_count_query);
@@ -321,7 +348,8 @@ $female_count = $female_result->fetch_assoc()['count'];
             </div>
             <div class="stat-card">
                 <h3>Most Active Area</h3>
-                <p><?php echo htmlspecialchars($max_area['area']) . ' (' . $max_area['count'] . ' karkunan)'; ?></p>
+                <p><?php echo htmlspecialchars(ucwords(str_replace('_', ' ', $max_area['standardized_area']))) . 
+                    ' (' . $max_area['count'] . ' karkunan)'; ?></p>
             </div>
         </div>
 

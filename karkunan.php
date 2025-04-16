@@ -9,7 +9,7 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
 // Define areas
 // Update the areas array
 $areas = [
-    'sohran_goth' => 'Sohran Goth',
+    'sohrab_goth' => 'Sohrab Goth',  // Updated key and display name
     'lassi_goth' => 'Lassi Goth',
     'gulshan_maymar' => 'Gulshan Maymar',
     'jhanjar_goth' => 'Jhanjar Goth',
@@ -21,8 +21,8 @@ $areas = [
 // Get count of karkunan for each area
 $area_counts = [];
 foreach ($areas as $key => $name) {
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM karkunan WHERE area = ?");
-    $stmt->bind_param("s", $key);
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM karkunan WHERE area = ? OR area = ?");
+    $stmt->bind_param("ss", $key, $name);
     $stmt->execute();
     $result = $stmt->get_result();
     $area_counts[$key] = $result->fetch_assoc()['count'];
@@ -38,46 +38,89 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $file = $_FILES['csv_file']['tmp_name'];
         
         if (($handle = fopen($file, "r")) !== FALSE) {
-            // Skip header row
-            fgetcsv($handle);
+            fgetcsv($handle); // Skip header row
             
             while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
-                $stmt = $conn->prepare("INSERT INTO karkunan (name, father_name, gender, age, marital_status, address, cnic, education, source_of_income, responsibility, area) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                $stmt->bind_param("sssississss", 
-                    $data[0],  // name
-                    $data[1],  // father_name
-                    $data[2],  // gender
-                    $data[3],  // age
-                    $data[4],  // marital_status
-                    $data[5],  // address
-                    $data[6],  // cnic
-                    $data[7],  // education
-                    $data[8],  // source_of_income
-                    $data[9],  // responsibility
-                    $_POST['area']
-                );
-                $stmt->execute();
+                $conn->begin_transaction();
+                try {
+                    // Insert into karkunan table with all required fields
+                    $stmt = $conn->prepare("INSERT INTO karkunan (name, father_name, name_relation, gender, age, marital_status, address, cnic, education, source_of_income, responsibility, area) VALUES (?, ?, 'father', ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                    $stmt->bind_param("ssssississs", 
+                        $data[0],  // name
+                        $data[1],  // father_name
+                        $data[2],  // gender
+                        $data[3],  // age
+                        $data[4],  // marital_status
+                        $data[5],  // address
+                        $data[6],  // cnic
+                        $data[7],  // education
+                        $data[8],  // source_of_income
+                        $data[9],  // responsibility
+                        $_POST['area']
+                    );
+                    $stmt->execute();
+                    $karkun_id = $conn->insert_id;
+
+                    // Handle member status from CSV
+                    $member_status = strtolower(trim($data[10]));
+                    if ($member_status === 'arkan') {
+                        $stmt = $conn->prepare("INSERT INTO arkan (karkun_id, joining_date) VALUES (?, ?)");
+                        $stmt->bind_param("is", $karkun_id, $data[11]);
+                        $stmt->execute();
+                    } elseif ($member_status === 'umedwar') {
+                        $stmt = $conn->prepare("INSERT INTO umedwar (karkun_id, application_date) VALUES (?, CURRENT_DATE())");
+                        $stmt->bind_param("i", $karkun_id);
+                        $stmt->execute();
+                    }
+
+                    $conn->commit();
+                } catch (Exception $e) {
+                    $conn->rollback();
+                    echo "<script>alert('Error occurred while importing row: " . addslashes($data[0]) . " - " . $e->getMessage() . "');</script>";
+                }
             }
             fclose($handle);
             echo "<script>alert('CSV data imported successfully!');</script>";
         }
     } elseif (isset($_POST['add_karkun'])) {
-        $stmt = $conn->prepare("INSERT INTO karkunan (name, father_name, name_relation, gender, age, marital_status, address, cnic, education, source_of_income, responsibility, area) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("ssssississss", 
-            $_POST['name'],
-            $_POST['father_name'],
-            $_POST['name_relation'],
-            $_POST['gender'],
-            $_POST['age'],
-            $_POST['marital_status'],
-            $_POST['address'],
-            $_POST['cnic'],
-            $_POST['education'],
-            $_POST['source_of_income'],
-            $_POST['responsibility'],
-            $_POST['area']
-        );
-        $stmt->execute();
+        $conn->begin_transaction();
+        try {
+            // Insert into karkunan table
+            $stmt = $conn->prepare("INSERT INTO karkunan (name, father_name, name_relation, gender, age, marital_status, address, cnic, education, source_of_income, responsibility, area) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("ssssississss", 
+                $_POST['name'],
+                $_POST['father_name'],
+                $_POST['name_relation'],
+                $_POST['gender'],
+                $_POST['age'],
+                $_POST['marital_status'],
+                $_POST['address'],
+                $_POST['cnic'],
+                $_POST['education'],
+                $_POST['source_of_income'],
+                $_POST['responsibility'],
+                $_POST['area']
+            );
+            $stmt->execute();
+            $karkun_id = $conn->insert_id;
+        
+            // Insert into respective status table
+            if ($_POST['member_status'] === 'arkan') {
+                $stmt = $conn->prepare("INSERT INTO arkan (karkun_id, joining_date) VALUES (?, ?)");
+                $stmt->bind_param("is", $karkun_id, $_POST['joining_date']);
+                $stmt->execute();
+            } elseif ($_POST['member_status'] === 'umedwar') {
+                $stmt = $conn->prepare("INSERT INTO umedwar (karkun_id, application_date) VALUES (?, CURRENT_DATE())");
+                $stmt->bind_param("i", $karkun_id);
+                $stmt->execute();
+            }
+        
+            $conn->commit();
+            echo "<script>alert('Karkun added successfully!');</script>";
+        } catch (Exception $e) {
+            $conn->rollback();
+            echo "<script>alert('Error occurred while adding karkun.');</script>";
+        }
     }
 }
 
@@ -122,7 +165,7 @@ if ($selected_area) {
         /* Enhanced Navbar */
         .navbar {
             background: linear-gradient(90deg, #006600 0%, #008800 100%);
-            padding: 12px 40px;
+            padding: 4px 20px;
             box-shadow: 0 4px 20px rgba(0,102,0,0.15);
             display: flex;
             justify-content: space-between;
@@ -217,18 +260,27 @@ if ($selected_area) {
             border: 1px solid rgba(0,102,0,0.08);
             position: relative;
             overflow: hidden;
+            text-decoration: none; /* Added this */
         }
 
-        .area-card::after {
-            content: '';
+        .area-card::before {
+            content: '+ Add Karkun';
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, rgba(0,102,0,0.05) 0%, rgba(0,136,0,0.05) 100%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,102,0,0.9);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
             opacity: 0;
-            transition: opacity 0.3s ease;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            z-index: 2;
+        }
+
+        .area-card:hover::before {
+            opacity: 1;
         }
 
         .area-card:hover {
@@ -237,8 +289,10 @@ if ($selected_area) {
             border-color: #006600;
         }
 
-        .area-card:hover::after {
-            opacity: 1;
+        .area-card:hover .count-badge,
+        .area-card:hover i,
+        .area-card:hover h3 {
+            opacity: 0.3;
         }
 
         .area-card i {
@@ -589,7 +643,7 @@ if ($selected_area) {
             <form method="POST">
                 <input type="hidden" name="area" value="<?php echo $selected_area; ?>">
                 
-                <!-- Add this right after the form's opening tag -->
+                // Add this right after the form's opening tag -->
                 <div class="form-tabs">
                     <button type="button" class="tab-btn active" onclick="showTab('manual')">Manual Entry</button>
                     <button type="button" class="tab-btn" onclick="showTab('csv')">CSV Upload</button>
@@ -706,6 +760,21 @@ if ($selected_area) {
                             <option value="Other">Other</option>
                         </select>
                     </div>
+
+                    <div class="form-group">
+                        <label>Member Status:</label>
+                        <select name="member_status" required>
+                            <option value="">Select Status</option>
+                            <option value="karkun">Karkun</option>
+                            <option value="arkan">Arkan</option>
+                            <option value="umedwar">Umedwar</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group joining-date" style="display: none;">
+                        <label>Joining Date:</label>
+                        <input type="date" name="joining_date">
+                    </div>
                 </div>
 
                 <div id="csv-upload" class="tab-content">
@@ -714,7 +783,7 @@ if ($selected_area) {
                             <h3>CSV Upload Instructions</h3>
                             <p>Please ensure your CSV file has the following columns:</p>
                             <ul>
-                                <li>Name, Father's/Husband's Name, Name Relation (father/husband), Gender, Age, Marital Status, CNIC, Education, Responsibility</li>
+                                <li>Name, Father's/Husband's Name, Gender, Age, Marital Status, Address, CNIC, Education, Source of Income, Responsibility, Member Status (arkan/umedwar/karkun), Joining Date (for arkan only)</li>
                             </ul>
                             <a href="templates/karkunan_template.csv" download class="template-btn">Download Template</a>
                         </div>
@@ -800,6 +869,17 @@ function handleDrop(e) {
 fileInput.addEventListener('change', function(e) {
     if (this.files.length > 0) {
         document.querySelector('form').submit();
+    }
+});
+// Add this to your existing script section
+document.querySelector('select[name="member_status"]').addEventListener('change', function() {
+    const joiningDateField = document.querySelector('.joining-date');
+    if (this.value === 'arkan') {
+        joiningDateField.style.display = 'block';
+        joiningDateField.querySelector('input').required = true;
+    } else {
+        joiningDateField.style.display = 'none';
+        joiningDateField.querySelector('input').required = false;
     }
 });
 </script>

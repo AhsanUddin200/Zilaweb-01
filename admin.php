@@ -9,7 +9,7 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
 // Get total counts from database
 $arkan_count = 0;
 $karkunan_count = 0;
-$umeedwar_count = 0;
+$umedwar_count = 0;
 
 // Count Arkan
 $query = "SELECT COUNT(*) as total FROM arkan";
@@ -27,12 +27,12 @@ if ($result) {
     $karkunan_count = $row['total'];
 }
 
-// Count Umeedwar
-$query = "SELECT COUNT(*) as total FROM umeedwar";
+// Count umedwar
+$query = "SELECT COUNT(*) as total FROM umedwar";
 $result = mysqli_query($conn, $query);
 if ($result) {
     $row = mysqli_fetch_assoc($result);
-    $umeedwar_count = $row['total'];
+    $umedwar_count = $row['total'];
 }
 ?>
 
@@ -77,10 +77,12 @@ if ($result) {
         }
 
         .navbar-logo {
-            height: 40px;
-            width: auto;
-            margin-right: 10px;
-        }
+    height: 40px;
+    width: auto;
+    margin-right: 10px;
+    border-radius: 18px; /* ya jitna rounded chahte ho */
+}
+
 
         .navbar-links {
             display: flex;
@@ -356,8 +358,8 @@ if ($result) {
 
     <div class="stat-card">
         <i class="fas fa-user-plus" style="font-size: 2.5em; color: #006600; margin-bottom: 15px;"></i>
-        <h3>Total Umeedwaran</h3>
-        <div class="stat-number"><?php echo $umeedwar_count; ?></div>
+        <h3>Total umedwaran</h3>
+        <div class="stat-number"><?php echo $umedwar_count; ?></div>
     </div>
 </div>
 

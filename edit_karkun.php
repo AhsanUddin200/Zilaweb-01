@@ -16,35 +16,74 @@ if ($id === 0) {
 }
 
 // Handle form submission
+// Replace the existing POST handler section with this updated version
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = $_POST['name'];
     $father_name = $_POST['father_name'];
-    $gender = $_POST['gender'];  // Added gender
+    $gender = $_POST['gender'];
     $age = $_POST['age'];
     $area = $_POST['area'];
     $marital_status = $_POST['marital_status'];
+    $address = $_POST['address'];
     $cnic = $_POST['cnic'];
     $education = $_POST['education'];
     $responsibility = $_POST['responsibility'];
+    $member_status = $_POST['member_status'];
+    $joining_date = $_POST['joining_date'] ?? null;
 
-    $query = "UPDATE karkunan SET 
-              name = ?, 
-              father_name = ?, 
-              gender = ?,
-              age = ?, 
-              area = ?, 
-              marital_status = ?, 
-              cnic = ?, 
-              education = ?, 
-              responsibility = ? 
-              WHERE id = ?";
+    $conn->begin_transaction();
+    try {
+        // Update karkunan table
+        $query = "UPDATE karkunan SET 
+                  name = ?, 
+                  father_name = ?, 
+                  gender = ?,
+                  age = ?, 
+                  area = ?, 
+                  marital_status = ?, 
+                  address = ?,  
+                  cnic = ?, 
+                  education = ?, 
+                  responsibility = ? 
+                  WHERE id = ?";
 
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("sssisssssi", $name, $father_name, $gender, $age, $area, $marital_status, $cnic, $education, $responsibility, $id);
+        $stmt = $conn->prepare($query);
+        $stmt->bind_param("sssissssssi", 
+            $name, 
+            $father_name, 
+            $gender, 
+            $age, 
+            $area, 
+            $marital_status, 
+            $address,
+            $cnic, 
+            $education, 
+            $responsibility, 
+            $id
+        );
+        $stmt->execute();
 
-    if ($stmt->execute()) {
+        // Remove existing status
+        $conn->query("DELETE FROM arkan WHERE karkun_id = $id");
+        $conn->query("DELETE FROM umedwar WHERE karkun_id = $id");
+
+        // Add new status
+        if ($member_status === 'arkan' && $joining_date) {
+            $stmt = $conn->prepare("INSERT INTO arkan (karkun_id, joining_date) VALUES (?, ?)");
+            $stmt->bind_param("is", $id, $joining_date);
+            $stmt->execute();
+        } elseif ($member_status === 'umedwar') {
+            $stmt = $conn->prepare("INSERT INTO umedwar (karkun_id, application_date) VALUES (?, CURRENT_DATE())");
+            $stmt->bind_param("i", $id);
+            $stmt->execute();
+        }
+
+        $conn->commit();
         header("Location: karkundetail.php?success=1");
         exit();
+    } catch (Exception $e) {
+        $conn->rollback();
+        echo "<script>alert('Error updating record: " . $e->getMessage() . "');</script>";
     }
 }
 
@@ -59,6 +98,31 @@ $karkun = $result->fetch_assoc();
 if (!$karkun) {
     header("Location: karkundetail.php");
     exit();
+}
+// Add this code after fetching karkun details (after the if (!$karkun) check)
+// Get member status and joining date
+$member_status = 'karkun'; // default status
+$joining_date = null;
+
+// Check if karkun is arkan
+$stmt = $conn->prepare("SELECT joining_date FROM arkan WHERE karkun_id = ?");
+$stmt->bind_param("i", $id);
+$stmt->execute();
+$result = $stmt->get_result();
+if ($result->num_rows > 0) {
+    $member_status = 'arkan';
+    $joining_date = $result->fetch_assoc()['joining_date'];
+}
+
+// Check if karkun is umedwar
+if ($member_status === 'karkun') {
+    $stmt = $conn->prepare("SELECT application_date FROM umedwar WHERE karkun_id = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($result->num_rows > 0) {
+        $member_status = 'umedwar';
+    }
 }
 ?>
 
@@ -227,13 +291,17 @@ if (!$karkun) {
                 </div>
 
                 <div class="form-group">
-                    <label>Father's Name</label>
+                    <label>Father's/Husband's Name</label>
                     <input type="text" name="father_name" value="<?php echo htmlspecialchars($karkun['father_name']); ?>" required>
+                    <small style="color: #666; display: block; margin-top: 5px;">
+                        <?php echo $karkun['gender'] === 'Female' && $karkun['marital_status'] === 'Married' ? 
+                            "Enter husband's name for married women" : "Enter father's name"; ?>
+                    </small>
                 </div>
 
                 <div class="form-group">
                     <label>Gender</label>
-                    <select name="gender" required>
+                    <select name="gender" id="gender" onchange="updateNameLabel()" required>
                         <option value="Male" <?php echo $karkun['gender'] === 'Male' ? 'selected' : ''; ?>>Male</option>
                         <option value="Female" <?php echo $karkun['gender'] === 'Female' ? 'selected' : ''; ?>>Female</option>
                     </select>
@@ -247,6 +315,11 @@ if (!$karkun) {
                 <div class="form-group">
                     <label>Area</label>
                     <input type="text" name="area" value="<?php echo htmlspecialchars($karkun['area']); ?>" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Address</label>
+                    <input type="text" name="address" value="<?php echo htmlspecialchars($karkun['address']); ?>" required>
                 </div>
 
                 <div class="form-group">
@@ -272,6 +345,20 @@ if (!$karkun) {
                     <input type="text" name="responsibility" value="<?php echo htmlspecialchars($karkun['responsibility']); ?>" required>
                 </div>
 
+                <div class="form-group">
+                    <label>Member Status</label>
+                    <select name="member_status" required onchange="toggleJoiningDate()">
+                        <option value="karkun" <?php echo $member_status === 'karkun' ? 'selected' : ''; ?>>Karkun</option>
+                        <option value="arkan" <?php echo $member_status === 'arkan' ? 'selected' : ''; ?>>Arkan</option>
+                        <option value="umedwar" <?php echo $member_status === 'umedwar' ? 'selected' : ''; ?>>Umedwar</option>
+                    </select>
+                </div>
+
+                <div class="form-group joining-date" style="display: <?php echo $member_status === 'arkan' ? 'block' : 'none'; ?>">
+                    <label>Joining Date</label>
+                    <input type="date" name="joining_date" value="<?php echo $joining_date; ?>" <?php echo $member_status === 'arkan' ? 'required' : ''; ?>>
+                </div>
+
                 <div class="btn-group">
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-save"></i> Update Karkun
@@ -283,5 +370,35 @@ if (!$karkun) {
             </div>
         </form>
     </div>
+    <script>
+        function toggleJoiningDate() {
+            const memberStatus = document.querySelector('select[name="member_status"]').value;
+            const joiningDateDiv = document.querySelector('.joining-date');
+            const joiningDateInput = document.querySelector('input[name="joining_date"]');
+            
+            if (memberStatus === 'arkan') {
+                joiningDateDiv.style.display = 'block';
+                joiningDateInput.required = true;
+            } else {
+                joiningDateDiv.style.display = 'none';
+                joiningDateInput.required = false;
+            }
+        }
+
+        function updateNameLabel() {
+            const gender = document.getElementById('gender').value;
+            const maritalStatus = document.querySelector('select[name="marital_status"]').value;
+            const small = document.querySelector('input[name="father_name"]').nextElementSibling;
+            
+            if (gender === 'Female' && maritalStatus === 'Married') {
+                small.textContent = "Enter husband's name for married women";
+            } else {
+                small.textContent = "Enter father's name";
+            }
+        }
+
+        // Add listener for marital status changes
+        document.querySelector('select[name="marital_status"]').addEventListener('change', updateNameLabel);
+    </script>
 </body>
 </html>
