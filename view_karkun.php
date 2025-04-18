@@ -14,7 +14,18 @@ if ($id === 0) {
     exit();
 }
 
-$query = "SELECT * FROM karkunan WHERE id = ?";
+// Update the query to check member status from different tables
+$query = "SELECT k.*, 
+    CASE 
+        WHEN a.id IS NOT NULL THEN 'Arkan'
+        WHEN u.id IS NOT NULL THEN 'Umedwar'
+        ELSE 'Karkun'
+    END as member_status
+    FROM karkunan k
+    LEFT JOIN arkan a ON k.id = a.karkun_id
+    LEFT JOIN umedwar u ON k.id = u.karkun_id
+    WHERE k.id = ?";
+
 $stmt = $conn->prepare($query);
 $stmt->bind_param("i", $id);
 $stmt->execute();
@@ -189,6 +200,24 @@ if (!$karkun) {
         </div>
 
         <div class="detail-group">
+            <div class="detail-label">Member Status</div>
+            <div class="detail-value" style="<?php 
+                $status_color = '';
+                switch($karkun['member_status']) {
+                    case 'Arkan':
+                        $status_color = '#006600';
+                        break;
+                    case 'Umedwar':
+                        $status_color = '#0066cc';
+                        break;
+                    default:
+                        $status_color = '#666666';
+                }
+                echo "color: {$status_color}; font-weight: 500;";
+            ?>"><?php echo htmlspecialchars($karkun['member_status']); ?></div>
+        </div>
+
+        <div class="detail-group">
             <div class="detail-label">CNIC</div>
             <div class="detail-value"><?php echo htmlspecialchars($karkun['cnic']); ?></div>
         </div>
@@ -201,6 +230,16 @@ if (!$karkun) {
         <div class="detail-group">
             <div class="detail-label">Responsibility</div>
             <div class="detail-value"><?php echo htmlspecialchars($karkun['responsibility']); ?></div>
+        </div>
+
+        <div class="detail-group">
+            <div class="detail-label">Phone Number</div>
+            <div class="detail-value"><?php echo htmlspecialchars($karkun['mobile_number']); ?></div>
+        </div>
+
+        <div class="detail-group">
+            <div class="detail-label">Address</div>
+            <div class="detail-value"><?php echo htmlspecialchars($karkun['address']); ?></div>
         </div>
     </div>
 
