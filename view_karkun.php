@@ -70,7 +70,7 @@ if (!$karkun) {
         }
 
         .container {
-            max-width: 800px;
+            max-width: 1000px;  /* Increased width */
             margin: 40px auto;
             padding: 30px;
             background: white;
@@ -78,77 +78,57 @@ if (!$karkun) {
             box-shadow: 0 3px 15px rgba(0,0,0,0.1);
         }
 
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px;
+            margin-top: 20px;
+        }
+
         .detail-group {
-            margin-bottom: 20px;
-            padding: 15px;
-            border-bottom: 1px solid #eee;
+            margin-bottom: 0;  /* Reset margin */
+            padding: 20px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+        }
+
+        .detail-group:hover {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            transform: translateY(-2px);
         }
 
         .detail-label {
-            font-weight: 500;
-            color: #666;
-            margin-bottom: 5px;
+            font-weight: 600;
+            color: #006600;
+            margin-bottom: 8px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .detail-value {
             font-size: 16px;
             color: #333;
+            padding: 8px 0;
+            border-bottom: 2px solid #e9ecef;
         }
 
-        .btn {
-            padding: 8px 20px;
-            border-radius: 6px;
-            text-decoration: none;
-            font-size: 14px;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            transition: all 0.3s ease;
+        /* Make certain groups full width */
+        .detail-group.full-width {
+            grid-column: 1 / -1;
         }
 
-        .btn-secondary {
-            background: #f8f9fa;
-            color: #444;
-            border: 1px solid #ddd;
-        }
-
-        .action-bar {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: flex;
-            gap: 10px;
-            border: 1px solid #e0e0e0;
-        }
-
-        .action-btn {
-            padding: 8px 16px;
-            border-radius: 6px;
-            text-decoration: none;
-            font-size: 14px;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            transition: all 0.3s ease;
-            color: white;
-        }
-
-        .action-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-
-        .btn-edit {
-            background: #006600;
-        }
-
-        .btn-print {
-            background: #555555;
-        }
-
-        .btn-delete {
-            background: #dc3545;
+        @media (max-width: 768px) {
+            .details-grid {
+                grid-template-columns: 1fr;
+            }
+            .container {
+                margin: 20px;
+                padding: 20px;
+            }
         }
     </style>
 
@@ -162,6 +142,55 @@ if (!$karkun) {
         </a>
     </div>
 
+    <style>
+        /* Add these action button styles */
+        .action-bar {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 1px solid #e9ecef;
+        }
+
+        .action-btn {
+            padding: 12px 25px;
+            border-radius: 8px;
+            text-decoration: none;
+            color: white;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .btn-edit {
+            background: #006600;
+        }
+
+        .btn-print {
+            background: #555555;
+        }
+
+        .btn-delete {
+            background: #dc3545;
+        }
+
+        .action-btn i {
+            font-size: 16px;
+        }
+    </style>
+
+    <!-- Then in the HTML, keep only the buttons -->
     <div class="container">
         <div class="action-bar">
             <a href="edit_karkun.php?id=<?php echo $karkun['id']; ?>" class="action-btn btn-edit">
@@ -174,72 +203,68 @@ if (!$karkun) {
                 <i class="fas fa-trash"></i> Delete
             </a>
         </div>
-        <div class="detail-group">
-            <div class="detail-label">Name</div>
-            <div class="detail-value"><?php echo htmlspecialchars($karkun['name']); ?></div>
-        </div>
+        <div class="details-grid">
+            <div class="detail-group">
+                <div class="detail-label">Name</div>
+                <div class="detail-value"><?php echo htmlspecialchars($karkun['name']); ?></div>
+            </div>
 
-        <div class="detail-group">
-            <div class="detail-label">Father's Name</div>
-            <div class="detail-value"><?php echo htmlspecialchars($karkun['father_name']); ?></div>
-        </div>
+            <div class="detail-group">
+                <div class="detail-label">Father's Name</div>
+                <div class="detail-value"><?php echo htmlspecialchars($karkun['father_name']); ?></div>
+            </div>
 
-        <div class="detail-group">
-            <div class="detail-label">Age</div>
-            <div class="detail-value"><?php echo htmlspecialchars($karkun['age']); ?></div>
-        </div>
+            <div class="detail-group">
+                <div class="detail-label">Age</div>
+                <div class="detail-value"><?php echo htmlspecialchars($karkun['age']); ?></div>
+            </div>
 
-        <div class="detail-group">
-            <div class="detail-label">Area</div>
-            <div class="detail-value"><?php echo htmlspecialchars($karkun['area']); ?></div>
-        </div>
+            <div class="detail-group">
+                <div class="detail-label">Gender</div>
+                <div class="detail-value"><?php echo htmlspecialchars($karkun['gender']); ?></div>
+            </div>
 
-        <div class="detail-group">
-            <div class="detail-label">Marital Status</div>
-            <div class="detail-value"><?php echo htmlspecialchars($karkun['marital_status']); ?></div>
-        </div>
+            <div class="detail-group">
+                <div class="detail-label">Area</div>
+                <div class="detail-value"><?php echo htmlspecialchars($karkun['area']); ?></div>
+            </div>
 
-        <div class="detail-group">
-            <div class="detail-label">Member Status</div>
-            <div class="detail-value" style="<?php 
-                $status_color = '';
-                switch($karkun['member_status']) {
-                    case 'Arkan':
-                        $status_color = '#006600';
-                        break;
-                    case 'Umedwar':
-                        $status_color = '#0066cc';
-                        break;
-                    default:
-                        $status_color = '#666666';
-                }
-                echo "color: {$status_color}; font-weight: 500;";
-            ?>"><?php echo htmlspecialchars($karkun['member_status']); ?></div>
-        </div>
+            <div class="detail-group">
+                <div class="detail-label">Marital Status</div>
+                <div class="detail-value"><?php echo htmlspecialchars($karkun['marital_status']); ?></div>
+            </div>
 
-        <div class="detail-group">
-            <div class="detail-label">CNIC</div>
-            <div class="detail-value"><?php echo htmlspecialchars($karkun['cnic']); ?></div>
-        </div>
+            <div class="detail-group">
+                <div class="detail-label">Member Status</div>
+                <div class="detail-value" style="color: <?php echo $status_color; ?>; font-weight: 500;">
+                    <?php echo htmlspecialchars($karkun['member_status']); ?>
+                </div>
+            </div>
 
-        <div class="detail-group">
-            <div class="detail-label">Education</div>
-            <div class="detail-value"><?php echo htmlspecialchars($karkun['education']); ?></div>
-        </div>
+            <div class="detail-group">
+                <div class="detail-label">CNIC</div>
+                <div class="detail-value"><?php echo htmlspecialchars($karkun['cnic']); ?></div>
+            </div>
 
-        <div class="detail-group">
-            <div class="detail-label">Responsibility</div>
-            <div class="detail-value"><?php echo htmlspecialchars($karkun['responsibility']); ?></div>
-        </div>
+            <div class="detail-group">
+                <div class="detail-label">Education</div>
+                <div class="detail-value"><?php echo htmlspecialchars($karkun['education']); ?></div>
+            </div>
 
-        <div class="detail-group">
-            <div class="detail-label">Phone Number</div>
-            <div class="detail-value"><?php echo htmlspecialchars($karkun['mobile_number']); ?></div>
-        </div>
+            <div class="detail-group">
+                <div class="detail-label">Phone Number</div>
+                <div class="detail-value"><?php echo htmlspecialchars($karkun['mobile_number']); ?></div>
+            </div>
 
-        <div class="detail-group">
-            <div class="detail-label">Address</div>
-            <div class="detail-value"><?php echo htmlspecialchars($karkun['address']); ?></div>
+            <div class="detail-group">
+                <div class="detail-label">Responsibility</div>
+                <div class="detail-value"><?php echo htmlspecialchars($karkun['responsibility']); ?></div>
+            </div>
+
+            <div class="detail-group full-width">
+                <div class="detail-label">Address</div>
+                <div class="detail-value"><?php echo htmlspecialchars($karkun['address']); ?></div>
+            </div>
         </div>
     </div>
 

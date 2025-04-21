@@ -86,8 +86,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $conn->begin_transaction();
         try {
             // Insert into karkunan table
-            $stmt = $conn->prepare("INSERT INTO karkunan (name, father_name, name_relation, gender, age, marital_status, address, cnic, education, source_of_income, responsibility, area) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("ssssississss", 
+            $stmt = $conn->prepare("INSERT INTO karkunan (
+                name, 
+                father_name, 
+                name_relation, 
+                gender, 
+                age, 
+                marital_status, 
+                address, 
+                cnic, 
+                education, 
+                mobile_number,
+                source_of_income, 
+                responsibility, 
+                area
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            
+            $stmt->bind_param("ssssissssssss", 
                 $_POST['name'],
                 $_POST['father_name'],
                 $_POST['name_relation'],
@@ -97,6 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_POST['address'],
                 $_POST['cnic'],
                 $_POST['education'],
+                $_POST['mobile'],  // Added mobile number
                 $_POST['source_of_income'],
                 $_POST['responsibility'],
                 $_POST['area']
@@ -643,7 +659,7 @@ if ($selected_area) {
             <form method="POST">
                 <input type="hidden" name="area" value="<?php echo $selected_area; ?>">
                 
-                // Add this right after the form's opening tag -->
+               
                 <div class="form-tabs">
                     <button type="button" class="tab-btn active" onclick="showTab('manual')">Manual Entry</button>
                     <button type="button" class="tab-btn" onclick="showTab('csv')">CSV Upload</button>

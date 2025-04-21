@@ -170,6 +170,21 @@ usort($family_members, function($a, $b) use ($family_head) {
         td {
             padding: 15px;
             border-bottom: 1px solid #eee;
+            transition: opacity 0.3s ease;
+        }
+
+        /* Add hover effects for specific columns */
+        tr td:not(:hover) {
+            opacity: 0.6;
+        }
+
+        tr:hover td {
+            opacity: 1;
+        }
+
+        tr td:hover {
+            opacity: 1;
+            background-color: rgba(0, 102, 0, 0.05);
         }
 
         tr:last-child td {
@@ -257,7 +272,190 @@ usort($family_members, function($a, $b) use ($family_head) {
             </div>
         </div>
 
-        <!-- Add this action buttons section -->
+        <!-- Statistics Section -->
+        <div class="stats-section">
+            <?php
+            // Calculate statistics
+            $total_members = count($family_members);
+            $total_age = 0;
+            $education_counts = [];
+            $male_count = 0;
+            $employed_count = 0;
+
+            foreach ($family_members as $member) {
+                // Age calculation
+                $total_age += $member['age'];
+                
+                // Education distribution
+                $edu = !empty($member['education']) ? $member['education'] : 'Not Specified';
+                if ($edu === 'no' || $edu === 'No' || $edu === 'NO') {
+                    $edu = 'No Education';
+                }
+                $education_counts[$edu] = ($education_counts[$edu] ?? 0) + 1;
+                
+                // Gender count
+                if ($member['gender'] === 'Male') {
+                    $male_count++;
+                }
+                
+                // Employment count based on source_of_income
+                if (!empty($member['source_of_income']) && 
+                    $member['source_of_income'] !== 'No' && 
+                    $member['source_of_income'] !== 'Housewife' && 
+                    $member['source_of_income'] !== 'Student') {
+                    $employed_count++;
+                }
+            }
+
+            $avg_age = round($total_age / $total_members, 1);
+            $female_count = $total_members - $male_count;
+            ?>
+
+            <style>
+                .stats-section {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                    gap: 20px;
+                    margin-bottom: 30px;
+                }
+
+                .stat-card {
+                    background: white;
+                    padding: 20px;
+                    border-radius: 10px;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+                    transition: all 0.3s ease;
+                    cursor: pointer;
+                }
+
+                .stat-card:hover {
+                    transform: translateY(-5px);
+                    box-shadow: 0 8px 25px rgba(0,102,0,0.15);
+                }
+
+                .stat-card:hover h3 {
+                    color: #008800;
+                }
+
+                .stat-card:hover .stat-value {
+                    color: #006600;
+                }
+                .stat-card h3 {
+                    color: #006600;
+                    margin: 0 0 15px 0;
+                    font-size: 16px;
+                }
+
+                .stat-value {
+                    font-size: 24px;
+                    font-weight: bold;
+                    color: #333;
+                    margin-bottom: 10px;
+                }
+
+                .stat-detail {
+                    font-size: 14px;
+                    color: #666;
+                }
+
+                .education-list {
+                    list-style: none;
+                    padding: 0;
+                    margin: 0;
+                }
+
+                .education-list li {
+                    display: flex;
+                    justify-content: space-between;
+                    margin-bottom: 5px;
+                    font-size: 14px;
+                }
+            </style>
+
+            <!-- <div class="stat-card">
+                <h3>Age Statistics</h3>
+                <div class="stat-value"><?php echo $avg_age; ?></div>
+                <div class="stat-detail">Average Age</div>
+            </div> -->
+
+            <style>
+                .stats-section {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                    gap: 20px;
+                    margin-bottom: 30px;
+                }
+
+                .stat-card {
+                    position: relative;
+                    overflow: hidden;
+                }
+
+                .icon-hover {
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    font-size: 64px;
+                    opacity: 0;
+                    transition: opacity 0.3s ease;
+                    color: rgba(0, 102, 0, 0.15);
+                }
+
+                .stat-card:hover .icon-hover {
+                    opacity: 1;
+                }
+
+                .stat-card:hover .stat-value,
+                .stat-card:hover .stat-detail,
+                .stat-card:hover .education-list {
+                    position: relative;
+                    z-index: 2;
+                }
+            </style>
+
+            <!-- Update all stat cards -->
+            <div class="stat-card">
+                <h3>Age Statistics</h3>
+                <div class="stat-value"><?php echo $avg_age; ?></div>
+                <div class="stat-detail">Average Age</div>
+                <div class="icon-hover">
+                    <i class="fas fa-clock"></i>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <h3>Gender Distribution</h3>
+                <div class="stat-value"><?php echo round(($male_count/$total_members) * 100); ?>%</div>
+                <div class="stat-detail">Male: <?php echo $male_count; ?> | Female: <?php echo $female_count; ?></div>
+                <div class="icon-hover">
+                    <i class="fas fa-venus-mars"></i>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <h3>Education Distribution</h3>
+                <ul class="education-list">
+                    <?php foreach ($education_counts as $edu => $count): ?>
+                    <li><span><?php echo htmlspecialchars($edu); ?>:</span><span><?php echo $count; ?></span></li>
+                    <?php endforeach; ?>
+                </ul>
+                <div class="icon-hover">
+                    <i class="fas fa-graduation-cap"></i>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <h3>Employment Status</h3>
+                <div class="stat-value"><?php echo $employed_count; ?></div>
+                <div class="stat-detail">Employed Members</div>
+                <div class="icon-hover">
+                    <i class="fas fa-briefcase"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons Section -->
         <div class="action-buttons" style="margin-bottom: 20px;">
             <button onclick="window.print()" class="action-btn print-btn">
                 <i class="fas fa-print"></i> Print

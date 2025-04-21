@@ -30,6 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $responsibility = $_POST['responsibility'];
     $member_status = $_POST['member_status'];
     $joining_date = $_POST['joining_date'] ?? null;
+    $mobile_number = $_POST['mobile_number'];  // Add this line to capture mobile number
 
     $conn->begin_transaction();
     try {
@@ -44,11 +45,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                   address = ?,  
                   cnic = ?, 
                   education = ?, 
+                  mobile_number = ?,  
                   responsibility = ? 
                   WHERE id = ?";
 
         $stmt = $conn->prepare($query);
-        $stmt->bind_param("sssissssssi", 
+        $stmt->bind_param("sssisssssssi", 
             $name, 
             $father_name, 
             $gender, 
@@ -58,6 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $address,
             $cnic, 
             $education, 
+            $mobile_number,  // Use the captured mobile_number variable
             $responsibility, 
             $id
         );
@@ -357,6 +360,11 @@ if ($member_status === 'karkun') {
                 <div class="form-group joining-date" style="display: <?php echo $member_status === 'arkan' ? 'block' : 'none'; ?>">
                     <label>Joining Date</label>
                     <input type="date" name="joining_date" value="<?php echo $joining_date; ?>" <?php echo $member_status === 'arkan' ? 'required' : ''; ?>>
+                </div>
+
+                <div class="form-group">
+                    <label>Mobile Number</label>
+                    <input type="tel" name="mobile_number" value="<?php echo htmlspecialchars($karkun['mobile_number']); ?>" pattern="03\d{2}-\d{7}" placeholder="0300-0000000" required>
                 </div>
 
                 <div class="btn-group">
