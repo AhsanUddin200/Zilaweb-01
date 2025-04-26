@@ -899,3 +899,93 @@ document.querySelector('select[name="member_status"]').addEventListener('change'
     }
 });
 </script>
+
+
+<style>
+    .stats-dashboard {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 25px;
+        padding: 40px;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .stats-card {
+        background: white;
+        padding: 25px;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+
+    .stats-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .stats-header h3 {
+        color: #333;
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    .total-count {
+        background: #e8f5e9;
+        color: #006600;
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-weight: 500;
+    }
+
+    .stats-bars {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .stat-bar {
+        display: grid;
+        grid-template-columns: 80px 1fr 50px;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .bar-label {
+        font-size: 14px;
+        color: #666;
+    }
+
+    .bar-container {
+        height: 8px;
+        background: #f0f0f0;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .bar {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.3s ease;
+    }
+
+    .bar.arkan { background: #0066cc; }
+    .bar.umedwar { background: #9933cc; }
+    .bar.karkun { background: #006600; }
+
+    .bar-count {
+        font-size: 14px;
+        color: #333;
+        text-align: right;
+        font-weight: 500;
+    }
+
+    @media (max-width: 768px) {
+        .stats-dashboard {
+            padding: 20px;
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
