@@ -17,7 +17,8 @@ if ($result) {
 }
 
 // Get area counts with gender split
-// Get area counts with gender split
+// Update the area query to count both karkunan and umeedwar
+// Update the area query to count actual Umeedwar per area
 $area_query = "SELECT 
                 CASE 
                     WHEN LOWER(k.address) LIKE '%sohrab%goth%' THEN 'Sohrab Goth'
@@ -28,22 +29,36 @@ $area_query = "SELECT
                     WHEN LOWER(k.address) LIKE '%bahria%' THEN 'Bahria'
                     WHEN LOWER(k.address) LIKE '%ahsan%abad%' THEN 'Ahsan Abad'
                 END as standardized_address,
+                COUNT(u.id) as total_umeedwar,
                 SUM(CASE WHEN LOWER(k.gender) = 'male' THEN 1 ELSE 0 END) as male_count,
-                SUM(CASE WHEN LOWER(k.gender) = 'female' THEN 1 ELSE 0 END) as female_count,
-                COUNT(*) as total_count
-               FROM umedwar u 
-               LEFT JOIN karkunan k ON u.karkun_id = k.id 
+                SUM(CASE WHEN LOWER(k.gender) = 'female' THEN 1 ELSE 0 END) as female_count
+               FROM karkunan k
+               LEFT JOIN umedwar u ON k.id = u.karkun_id
                WHERE k.address IS NOT NULL
                GROUP BY standardized_address
                HAVING standardized_address IS NOT NULL
                ORDER BY standardized_address";
+
+// Then update the display section:
 $area_result = mysqli_query($conn, $area_query);
 
 // Get all umeedwar with karkun details
+// After the total count query, add these lines
+$items_per_page = 12;
+$current_page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$offset = ($current_page - 1) * $items_per_page;
+
+// Get total pages
+$total_pages_query = "SELECT COUNT(*) as count FROM umedwar";
+$total_pages_result = mysqli_query($conn, $total_pages_query);
+$total_pages = ceil(mysqli_fetch_assoc($total_pages_result)['count'] / $items_per_page);
+
+// Modify the umeedwar query to include pagination
 $umeedwar_query = "SELECT u.*, k.name, k.father_name, k.gender, k.address, k.cnic, k.education 
                    FROM umedwar u 
                    LEFT JOIN karkunan k ON u.karkun_id = k.id 
-                   ORDER BY k.name ASC";
+                   ORDER BY k.name ASC
+                   LIMIT $items_per_page OFFSET $offset";
 $umeedwar_result = mysqli_query($conn, $umeedwar_query);
 ?>
 
@@ -165,53 +180,45 @@ $umeedwar_result = mysqli_query($conn, $umeedwar_query);
     </div>
 
     <div class="container">
-        <div class="header">
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-                <div style="display: flex; align-items: center; gap: 20px;">
-                    <input type="text" class="search-box" placeholder="Search Umeedwar...">
-                    <span style="color: #006600; display: flex; align-items: center; gap: 5px;">
-                        <i class="fas fa-users"></i> Total Umeedwar: <strong><?php echo $total_count; ?></strong>
-                    </span>
-                </div>
-                <div style="display: flex; flex-wrap: wrap; gap: 15px; font-size: 13px;">
-                    <?php 
-                    if ($area_result) {
-                        while ($row = mysqli_fetch_assoc($area_result)) {
-                            echo '<span style="background: #f0f8f0; padding: 5px 10px; border-radius: 5px; border: 1px solid #dde8dd;">
-                                <i class="fas fa-map-marker-alt"></i> ' . htmlspecialchars($row['standardized_address']) . 
-                                ': ' . $row['total_count'] . ' (<i class="fas fa-male" style="color: #006600;"></i> ' . 
-                                $row['male_count'] . ' <i class="fas fa-female" style="color: #006600;"></i> ' . 
-                                $row['female_count'] . ')
-                            </span>';
-                        }
-                    }
-                    ?>
-                </div>
-            </div>
-            <a href="add_umeedwar.php" class="action-button" style="background: #006600; padding: 8px 15px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <input type="text" class="search-box" placeholder="Search Umeedwar...">
+            <span style="color: #006600; display: flex; align-items: center; gap: 5px;">
+                <i class="fas fa-users"></i> Total Umeedwar: <?php echo $total_count; ?>
+            </span>
+            <a href="add_umeedwar.php" class="action-button">
                 <i class="fas fa-plus"></i> Add New Umeedwar
             </a>
         </div>
 
-        <!-- Remove the old stats-grid section since we've moved it to the header -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <h3>Total Umeedwar</h3>
-                <p style="font-size: 24px; margin: 10px 0;"><?php echo $total_count; ?></p>
-            </div>
-            <?php while ($area = mysqli_fetch_assoc($area_result)): ?>
-                <div class="stat-card">
-                    <h3><?php echo htmlspecialchars($area['standardized_address']); ?></h3>
-                    <p>Male: <?php echo $area['male_count']; ?></p>
-                    <p>Female: <?php echo $area['female_count']; ?></p>
-                    <p>Total: <?php echo $area['total_count']; ?></p>
-                </div>
-            <?php endwhile; ?>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; margin-bottom: 20px;">
+            <?php 
+            if ($area_result) {
+                while ($row = mysqli_fetch_assoc($area_result)) {
+                    $total_area = $row['male_count'] + $row['female_count'];
+                    echo '<div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: center;">
+                            <div style="background: #e3f2fd; padding: 5px 10px; border-radius: 15px; display: inline-block; margin-bottom: 10px;">
+                            <i class="fas fa-user-graduate"></i> ' . $total_area . ' Umeedwar
+                        </div>
+                        <div style="position: relative; text-align: center;">
+                            <i class="fas fa-map-marker-alt" style="color: #006600; font-size: 24px; position: absolute; right: 20px;"></i>
+                            <h3 style="color: #006600; margin: 10px 0;">' . htmlspecialchars($row['standardized_address']) . '</h3>
+                            <div style="display: flex; justify-content: center; gap: 15px; margin-top: 10px;">
+                                <span style="color: #006600;"><i class="fas fa-male"></i> ' . ($row['male_count'] ? $row['male_count'] : '0') . '</span>
+                                <span style="color: #ff69b4;"><i class="fas fa-female"></i> ' . ($row['female_count'] ? $row['female_count'] : '0') . '</span>
+                            </div>
+                        </div>
+                    </div>';
+                }
+            }
+            ?>
         </div>
+
+        <!-- Remove this div and keep everything else -->
+      
 
         <div class="umeedwar-grid">
             <?php while ($umeedwar = mysqli_fetch_assoc($umeedwar_result)): ?>
-                <div class="umeedwar-card">
+                <div class="umeedwar-card" style="background: <?php echo strtolower($umeedwar['gender']) === 'female' ? '#fff0f5' : 'white'; ?>">
                     <h3 style="margin: 0 0 10px 0; color: #006600;">
                         <?php echo htmlspecialchars($umeedwar['name']); ?>
                     </h3>
@@ -252,6 +259,20 @@ $umeedwar_result = mysqli_query($conn, $umeedwar_query);
                 </div>
             <?php endwhile; ?>
         </div>
+        
+        <?php if ($total_pages > 1): ?>
+        <div class="pagination" style="display: flex; justify-content: center; gap: 10px; margin-top: 20px;">
+            <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+                <a href="?page=<?php echo $i; ?>" 
+                   style="padding: 8px 12px; border-radius: 5px; text-decoration: none;
+                          background: <?php echo $i === $current_page ? '#006600' : 'white'; ?>;
+                          color: <?php echo $i === $current_page ? 'white' : '#006600'; ?>;
+                          box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                    <?php echo $i; ?>
+                </a>
+            <?php endfor; ?>
+        </div>
+        <?php endif; ?>
     </div>
 
     <script>
