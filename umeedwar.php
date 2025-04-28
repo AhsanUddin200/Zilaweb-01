@@ -60,6 +60,21 @@ $umeedwar_query = "SELECT u.*, k.name, k.father_name, k.gender, k.address, k.cni
                    ORDER BY k.name ASC
                    LIMIT $items_per_page OFFSET $offset";
 $umeedwar_result = mysqli_query($conn, $umeedwar_query);
+// Monthly statistics
+$monthly_stats_query = "SELECT DATE_FORMAT(application_date, '%Y-%m') as month,
+                              COUNT(*) as total
+                       FROM umedwar 
+                       GROUP BY month 
+                       ORDER BY month DESC 
+                       LIMIT 6";
+$monthly_stats = mysqli_query($conn, $monthly_stats_query);
+
+// Gender statistics
+$gender_stats_query = "SELECT k.gender, COUNT(*) as total 
+                      FROM umedwar u
+                      JOIN karkunan k ON u.karkun_id = k.id
+                      GROUP BY k.gender";
+$gender_stats = mysqli_query($conn, $gender_stats_query);
 ?>
 
 <!DOCTYPE html>
@@ -116,14 +131,58 @@ $umeedwar_result = mysqli_query($conn, $umeedwar_query);
             margin-bottom: 20px;
         }
 
-        .stat-card {
+        .stats-dashboard {
             background: white;
             padding: 15px;
             border-radius: 10px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            text-align: center;
+            margin-bottom: 20px;
         }
 
+        .stats-dashboard h2 {
+            color: #006600;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .stat-card {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+            height: 250px;
+        }
+
+        .stat-card h3 {
+            color: #006600;
+            margin-bottom: 10px;
+            text-align: center;
+            font-size: 16px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .umeedwar-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            min-width: 0;
+        }
+
+        .umeedwar-info {
+            margin: 8px 0;
+            color: #666;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
         .umeedwar-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -181,7 +240,18 @@ $umeedwar_result = mysqli_query($conn, $umeedwar_query);
 
     <div class="container">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <input type="text" class="search-box" placeholder="Search Umeedwar...">
+            <div style="display: flex; gap: 10px;">
+                <input type="text" class="search-box" placeholder="Search Umeedwar...">
+                <a href="export_excel.php" class="action-button" style="background: #217346;">
+                    <i class="fas fa-file-excel"></i> Excel
+                </a>
+                <a href="export_pdf.php" class="action-button" style="background: #ff0000;">
+                    <i class="fas fa-file-pdf"></i> PDF
+                </a>
+                <button onclick="window.print();" class="action-button" style="background: #666;">
+                    <i class="fas fa-print"></i> Print
+                </button>
+            </div>
             <span style="color: #006600; display: flex; align-items: center; gap: 5px;">
                 <i class="fas fa-users"></i> Total Umeedwar: <?php echo $total_count; ?>
             </span>
@@ -211,6 +281,29 @@ $umeedwar_result = mysqli_query($conn, $umeedwar_query);
                 }
             }
             ?>
+        </div>
+
+        <div class="stats-dashboard">
+            <h2>Statistics Dashboard</h2>
+            <div class="stats-grid">
+                <!-- Monthly Applications Chart -->
+                <div class="stat-card">
+                    <h3>Monthly Applications</h3>
+                    <canvas id="monthlyChart"></canvas>
+                </div>
+
+                <!-- Gender Distribution Chart -->
+                <div class="stat-card">
+                    <h3>Gender Distribution</h3>
+                    <canvas id="genderChart"></canvas>
+                </div>
+
+                <!-- Area Distribution Chart -->
+                <div class="stat-card">
+                    <h3>Area Distribution</h3>
+                    <canvas id="areaChart"></canvas>
+                </div>
+            </div>
         </div>
 
         <!-- Remove this div and keep everything else -->
@@ -275,15 +368,106 @@ $umeedwar_result = mysqli_query($conn, $umeedwar_query);
         <?php endif; ?>
     </div>
 
-    <script>
-        // Search functionality
-        document.querySelector('.search-box').addEventListener('input', function(e) {
-            const search = e.target.value.toLowerCase();
-            document.querySelectorAll('.umeedwar-card').forEach(card => {
-                const text = card.textContent.toLowerCase();
-                card.style.display = text.includes(search) ? '' : 'none';
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script>
+            // Search functionality
+            document.querySelector('.search-box').addEventListener('input', function(e) {
+                const search = e.target.value.toLowerCase();
+                document.querySelectorAll('.umeedwar-card').forEach(card => {
+                    const text = card.textContent.toLowerCase();
+                    card.style.display = text.includes(search) ? '' : 'none';
+                });
             });
-        });
-    </script>
+    
+            // Monthly Applications Chart
+            new Chart(document.getElementById('monthlyChart'), {
+                type: 'bar',
+                data: {
+                    labels: [<?php 
+                        $labels = [];
+                        $data = [];
+                        mysqli_data_seek($monthly_stats, 0);
+                        while($row = mysqli_fetch_assoc($monthly_stats)) {
+                            $labels[] = "'" . date('M Y', strtotime($row['month'] . '-01')) . "'";
+                            $data[] = $row['total'];
+                        }
+                        echo implode(',', array_reverse($labels));
+                    ?>],
+                    datasets: [{
+                        label: 'Applications',
+                        data: [<?php echo implode(',', array_reverse($data)); ?>],
+                        backgroundColor: '#006600'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+    
+            // Gender Distribution Chart
+            new Chart(document.getElementById('genderChart'), {
+                type: 'pie',
+                data: {
+                    labels: [<?php 
+                        $labels = [];
+                        $data = [];
+                        mysqli_data_seek($gender_stats, 0);
+                        while($row = mysqli_fetch_assoc($gender_stats)) {
+                            $labels[] = "'" . ucfirst($row['gender']) . "'";
+                            $data[] = $row['total'];
+                        }
+                        echo implode(',', $labels);
+                    ?>],
+                    datasets: [{
+                        data: [<?php echo implode(',', $data); ?>],
+                        backgroundColor: ['#006600', '#ff69b4']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+    
+            // Area Distribution Chart
+            new Chart(document.getElementById('areaChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: [<?php 
+                        $labels = [];
+                        $data = [];
+                        mysqli_data_seek($area_result, 0);
+                        while($row = mysqli_fetch_assoc($area_result)) {
+                            $labels[] = "'" . $row['standardized_address'] . "'";
+                            $data[] = $row['total_umeedwar'];
+                        }
+                        echo implode(',', $labels);
+                    ?>],
+                    datasets: [{
+                        data: [<?php echo implode(',', $data); ?>],
+                        backgroundColor: [
+                            '#006600', '#008800', '#00aa00', '#00cc00',
+                            '#00ee00', '#00ff00', '#66ff66', '#99ff99'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                boxWidth: 12,
+                                font: {
+                                    size: 11
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        </script>
 </body>
 </html>
