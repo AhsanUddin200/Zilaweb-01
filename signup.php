@@ -4,8 +4,8 @@ include 'db.php';
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $name = $_POST['name'];
     $email = $_POST['email'];
-    $password = password_hash($_POST['password'], PASSWORD_BCRYPT);
-    $role = $_POST['role']; // admin or user
+    $password = $_POST['password']; // Removed password_hash
+    $role = $_POST['role'];
 
     // Use prepared statement to prevent SQL injection
     $stmt = $conn->prepare("INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)");

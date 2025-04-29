@@ -278,13 +278,18 @@ if ($result) {
     </style>
 </head>
 <body>
-    <div class="navbar">
+<div class="navbar">
         <h1>
             <img src="https://yt3.googleusercontent.com/zd9vDCi7ROOdiFxkGydYjmryIN7QEr14NWRVpoxTUctjnzXsHI17Z3peIyAGwIjb-Bpilc8_eQ=s900-c-k-c0x00ffffff-no-rj" alt="Digital Jamat Logo" class="navbar-logo">
             Digital Jamat
         </h1>
         <div class="navbar-links">
             <a href="#admin-section" class="nav-link">Manage</a>
+            <?php if ($_SESSION['user']['id'] == 5): ?>
+            <a href="admin_approval.php" class="nav-link">
+                <i class="fas fa-user-check"></i> Approve Admins
+            </a>
+            <?php endif; ?>
             <a href="logout.php" class="logout-btn">
                 <i class="fas fa-sign-out-alt"></i> Logout
             </a>

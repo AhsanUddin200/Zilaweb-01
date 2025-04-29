@@ -6,26 +6,27 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = $_POST['email'];
     $password = $_POST['password'];
 
-    $stmt = $conn->prepare("SELECT * FROM users WHERE email = ?");
+    $stmt = $conn->prepare("SELECT * FROM users WHERE email = ? AND role = 'admin'");
     $stmt->bind_param("s", $email);
     $stmt->execute();
     $result = $stmt->get_result();
 
     if ($result->num_rows > 0) {
         $user = $result->fetch_assoc();
+        // Direct password comparison since it's stored as plain text in database
         if ($password === $user['password']) {
-            $_SESSION['user'] = $user;
-            if ($user['role'] === 'admin') {
+            if ($user['is_approved'] == 1) {
+                $_SESSION['user'] = $user;
                 header("Location: admin.php");
+                exit();
             } else {
-                header("Location: dashboard.php");
+                echo "<p style='color:red;'>Your admin account is pending approval.</p>";
             }
-            exit();
         } else {
-            echo "<p style='color:red;'>Invalid email or password!</p>";
+            echo "<p style='color:red;'>Invalid password!</p>";
         }
     } else {
-        echo "<p style='color:red;'>User not found!</p>";
+        echo "<p style='color:red;'>Admin not found!</p>";
     }
 }
 ?>
