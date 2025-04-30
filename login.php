@@ -113,14 +113,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <body>
     <div class="container">
         <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRH2XLJ6IdwaNK3n4jyOqiywvkn_6JrmZoRg0w4T-kp5yUPbyj9qMDB0o4HRYqUeuFHJnE&usqp=CAU" alt="Logo" class="logo" width="100" height="100">
-        <h2>Login - One Tap Zila</h2>
+        <h2>Admin Login - One Tap Zila</h2>
         <form method="POST">
-            <input type="email" name="email" placeholder="Enter your email" required>
-            <input type="password" name="password" placeholder="Enter your password" required>
-            <button type="submit">Login</button>
+            <input type="email" name="email" placeholder="Enter admin email" required>
+            <input type="password" name="password" placeholder="Enter password" required>
+            <button type="submit">Admin Login</button>
         </form>
         <div class="footer">
-            Don't have an account? <a href="signup.php">Sign up here</a>
+            Want to become an admin? <a href="signup.php">Register here</a>
         </div>
     </div>
 </body>
