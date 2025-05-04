@@ -547,5 +547,573 @@ $daily_quotes = getDailyQuotes();
             </div>
         </div>
     </div>
+
+    <!-- Regional Activities Map Section -->
+        <style>
+            .map-section {
+                padding: 50px 5%;
+                background: #fff;
+            }
+            .map-container {
+                max-width: 1200px;
+                margin: 0 auto;
+            }
+            .map-title {
+                font-size: 2.2em;
+                color: var(--primary);
+                text-align: center;
+                margin-bottom: 30px;
+                font-family: 'Noto Nastaliq Urdu', serif;
+            }
+            .map-wrapper {
+                display: flex;
+                gap: 30px;
+                margin-bottom: 30px;
+            }
+            #jiMap {
+                flex: 1;
+                height: 500px;
+                border-radius: 12px;
+                overflow: hidden;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            }
+            .location-details {
+                flex: 0 0 300px;
+                padding: 20px;
+                background: #f8f9fa;
+                border-radius: 12px;
+                font-family: 'Noto Nastaliq Urdu', serif;
+                text-align: right;
+            }
+            .location-title {
+                color: var(--primary);
+                font-size: 1.4em;
+                margin-bottom: 15px;
+            }
+            .location-info {
+                margin-bottom: 20px;
+            }
+            .location-info p {
+                margin: 8px 0;
+                color: #666;
+            }
+            .location-events {
+                border-top: 1px solid #ddd;
+                padding-top: 15px;
+            }
+            .event-item {
+                margin: 10px 0;
+                padding: 10px;
+                background: white;
+                border-radius: 8px;
+            }
+        </style>
+    
+        <div class="map-section">
+            <div class="map-container">
+                <h2 class="map-title">مقامی دفاتر</h2>
+                <div class="map-wrapper">
+                    <div id="jiMap"></div>
+                    <div class="location-details">
+                        <h3 class="location-title">مرکزی دفتر</h3>
+                        <div class="location-info">
+                            <p><i class="fas fa-map-marker-alt"></i> منصورہ، لاہور</p>
+                            <p><i class="fas fa-phone"></i> 042-35330333</p>
+                            <p><i class="fas fa-envelope"></i> info@jamaat.org</p>
+                        </div>
+                        <div class="location-events">
+                            <h4>آنے والے پروگرام</h4>
+                            <div class="event-item">
+                                <p>ہفتہ وار اجتماع</p>
+                                <small>ہر بدھ - صبح 9 بجے</small>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add this in the head section -->
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+        <!-- Replace the Google Maps script with this -->
+        <script>
+            // JI Centers Data
+            const jiCenters = [
+                {
+                    name: 'مرکزی دفتر منصورہ',
+                    position: [31.5204, 74.3587],
+                    address: 'منصورہ، لاہور',
+                    phone: '042-35330333',
+                    email: 'info@jamaat.org'
+                },
+                {
+                    name: 'کراچی دفتر',
+                    position: [24.9048, 67.0653], // Updated coordinates for Shikarpur Colony
+                    address: 'ادارہ نور حق، 503، شکارپور کالونی، مسلم آباد، کراچی',
+                    phone: '021-35375566',
+                    email: 'karachi@jamaat.org'
+                },
+                {
+                    name: 'اسلام آباد دفتر',
+                    position: [33.6844, 73.0479],
+                    address: 'سیکٹر ایف، اسلام آباد',
+                    phone: '051-2876543',
+                    email: 'isb@jamaat.org'
+                }
+            ];
+
+            // Initialize Map
+            function initMap() {
+                const map = L.map('jiMap').setView([30.3753, 69.3451], 6);
+                
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(map);
+
+                // Add markers for each center
+                jiCenters.forEach(center => {
+                    const marker = L.marker(center.position)
+                        .addTo(map)
+                        .bindPopup(center.name);
+
+                    marker.on('click', () => {
+                        updateLocationDetails(center);
+                    });
+                });
+            }
+
+            // Update location details panel
+            function updateLocationDetails(center) {
+                document.querySelector('.location-title').textContent = center.name;
+                document.querySelector('.location-info').innerHTML = `
+                    <p><i class="fas fa-map-marker-alt"></i> ${center.address}</p>
+                    <p><i class="fas fa-phone"></i> ${center.phone}</p>
+                    <p><i class="fas fa-envelope"></i> ${center.email}</p>
+                `;
+            }
+
+            // Initialize map when page loads
+            window.onload = initMap;
+        </script>
+    </script>
+
+    <!-- Member Achievements Section -->
+        <style>
+            .achievements-section {
+                padding: 50px 5%;
+                background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            }
+            .achievements-container {
+                max-width: 1200px;
+                margin: 0 auto;
+            }
+            .achievements-title {
+                font-size: 2.2em;
+                color: var(--primary);
+                text-align: center;
+                margin-bottom: 40px;
+                font-family: 'Noto Nastaliq Urdu', serif;
+            }
+            .success-stories {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 30px;
+                margin-bottom: 50px;
+                overflow: hidden;
+            }
+            .story-card {
+                background: white;
+                border-radius: 15px;
+                padding: 25px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+                text-align: right;
+                opacity: 0;
+                transform: translateX(100px);
+                transition: all 0.5s ease;
+                display: none;
+            }
+            .story-card.active {
+                opacity: 1;
+                transform: translateX(0);
+                display: block;
+            }
+            .member-info {
+                display: flex;
+                align-items: center;
+                justify-content: flex-end;
+                margin-bottom: 15px;
+                gap: 15px;
+            }
+            .member-image {
+                width: 60px;
+                height: 60px;
+                border-radius: 50%;
+                object-fit: cover;
+            }
+            .member-details h4 {
+                color: var(--primary);
+                font-family: 'Noto Nastaliq Urdu', serif;
+                margin-bottom: 5px;
+            }
+            .member-details p {
+                color: #666;
+                font-size: 0.9em;
+            }
+            .story-content {
+                font-family: 'Noto Nastaliq Urdu', serif;
+                line-height: 1.6;
+                color: #444;
+            }
+            .stats-counter {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 20px;
+                margin: 40px 0;
+                text-align: center;
+            }
+            .counter-item {
+                padding: 20px;
+                background: white;
+                border-radius: 10px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            }
+            .counter-number {
+                font-size: 2.5em;
+                color: var(--primary);
+                font-weight: bold;
+                margin-bottom: 10px;
+            }
+            .counter-label {
+                font-family: 'Noto Nastaliq Urdu', serif;
+                color: #444;
+            }
+        </style>
+    
+        <div class="achievements-section">
+            <div class="achievements-container">
+                <h2 class="achievements-title">کامیابیاں اور خدمات</h2>
+                
+                <div class="stats-counter">
+                    <div class="counter-item">
+                        <div class="counter-number" data-target="50000">0</div>
+                        <div class="counter-label">سرگرم رکنیت</div>
+                    </div>
+                    <div class="counter-item">
+                        <div class="counter-number" data-target="1000">0</div>
+                        <div class="counter-label">مقامی یونٹس</div>
+                    </div>
+                    <div class="counter-item">
+                        <div class="counter-number" data-target="200">0</div>
+                        <div class="counter-label">فلاحی منصوبے</div>
+                    </div>
+                    <div class="counter-item">
+                        <div class="counter-number" data-target="5000">0</div>
+                        <div class="counter-label">رضاکار</div>
+                    </div>
+                </div>
+    
+                <div class="success-stories">
+                    <div class="story-card">
+                        <div class="member-info">
+                            <div class="member-details">
+                                <h4>محمد عمران</h4>
+                                <p>کراچی</p>
+                            </div>
+                            <img src="assets/images/member1.jpg" alt="Member" class="member-image">
+                        </div>
+                        <div class="story-content">
+                            <p>میں نے جماعت اسلامی کے پلیٹ فارم سے تعلیم یافتہ نوجوانوں کو روزگار دلوانے میں مدد کی۔ الحمدللہ اب 100 سے زائد نوجوان کامیابی سے اپنا کاروبار چلا رہے ہیں۔</p>
+                    </div>
+                </div>
+    
+                <div class="story-card">
+                    <div class="member-info">
+                        <div class="member-details">
+                            <h4>عائشہ فاطمہ</h4>
+                            <p>لاہور</p>
+                        </div>
+                        <img src="assets/images/member2.jpg" alt="Member" class="member-image">
+                    </div>
+                    <div class="story-content">
+                        <p>خواتین کی تعلیم و تربیت کے لیے ہمارے سینٹر میں 500 سے زائد خواتین مستفید ہو رہی ہیں۔ یہ سب جماعت اسلامی کی مدد سے ممکن ہوا۔</p>
+                    </div>
+                </div>
+    
+                <div class="story-card">
+                    <div class="member-info">
+                        <div class="member-details">
+                            <h4>عبدالرحمن</h4>
+                            <p>پشاور</p>
+                        </div>
+                        <img src="assets/images/member3.jpg" alt="Member" class="member-image">
+                    </div>
+                    <div class="story-content">
+                        <p>سیلاب متاثرین کی امداد کے لیے ہمارے رضاکاروں نے دن رات محنت کی۔ 1000 سے زائد خاندانوں کو بحال کیا گیا۔</p>
+                    </div>
+                </div>
+                <div class="story-card">
+                        <div class="member-info">
+                            <div class="member-details">
+                                <h4>سارہ خان</h4>
+                                <p>اسلام آباد</p>
+                            </div>
+                            <img src="assets/images/member4.jpg" alt="Member" class="member-image">
+                        </div>
+                        <div class="story-content">
+                            <p>ہمارے خواتین کے لیے ہنر سکھانے کے پروگرام سے 300 خواتین نے اپنا کاروبار شروع کیا۔</p>
+                        </div>
+                    </div>
+
+                    <!-- Fifth Card -->
+                    <div class="story-card">
+                        <div class="member-info">
+                            <div class="member-details">
+                                <h4>عمر فاروق</h4>
+                                <p>کوئٹہ</p>
+                            </div>
+                            <img src="assets/images/member5.jpg" alt="Member" class="member-image">
+                        </div>
+                        <div class="story-content">
+                            <p>ہمارے تعلیمی مراکز میں 500 طلبہ مفت تعلیم حاصل کر رہے ہیں۔</p>
+                        </div>
+                    </div>
+
+                    <!-- Sixth Card -->
+                    <div class="story-card">
+                        <div class="member-info">
+                            <div class="member-details">
+                                <h4>حفصہ علی</h4>
+                                <p>ملتان</p>
+                            </div>
+                            <img src="assets/images/member6.jpg" alt="Member" class="member-image">
+                        </div>
+                        <div class="story-content">
+                            <p>ہمارے صحت کے پروگرام سے 2000 مریضوں کو مفت علاج کی سہولت فراہم کی گئی۔</p>
+                        </div>
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Animated Counter
+        const counters = document.querySelectorAll('.counter-number');
+        
+        const animateCounter = (counter) => {
+            const target = parseInt(counter.getAttribute('data-target'));
+            const count = parseInt(counter.innerText);
+            const increment = target / 200;
+
+            if(count < target) {
+                counter.innerText = Math.ceil(count + increment);
+                setTimeout(() => animateCounter(counter), 1);
+            } else {
+                counter.innerText = target;
+            }
+        };
+
+        // Start animation when section is in view
+        const observerCallback = (entries) => {
+            entries.forEach(entry => {
+                if(entry.isIntersecting) {
+                    counters.forEach(counter => animateCounter(counter));
+                }
+            });
+        };
+
+        const observer = new IntersectionObserver(observerCallback);
+        observer.observe(document.querySelector('.stats-counter'));
+    </script>
+
+    <script>
+            const storyCards = document.querySelectorAll('.story-card');
+            let currentIndex = 0;
+    
+            function showCards() {
+                // Hide all cards
+                storyCards.forEach(card => {
+                    card.classList.remove('active');
+                    card.style.display = 'none';
+                });
+    
+                // Show current 3 cards
+                for(let i = 0; i < 3; i++) {
+                    let index = (currentIndex + i) % storyCards.length;
+                    storyCards[index].style.display = 'block';
+                    setTimeout(() => {
+                        storyCards[index].classList.add('active');
+                    }, 50);
+                }
+    
+                // Update index for next rotation
+                currentIndex = (currentIndex + 1) % storyCards.length;
+            }
+    
+            // Show initial cards
+            showCards();
+    
+            // Rotate every 4 seconds
+            setInterval(showCards, 4000);
+        </script>
 </body>
 </html>
+
+<!-- Add this style section -->
+<style>
+    .donation-main-card {
+        background: #ffffff;
+        border-radius: 20px;
+        padding: 40px 30px;
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        text-align: right;
+        max-width: 850px;
+        margin: 50px auto;
+        font-family: 'Noto Nastaliq Urdu', serif;
+        border-top: 8px solid #006600;
+    }
+
+    .donation-main-title {
+        color: #006600;
+        font-size: 2.6em;
+        margin-bottom: 15px;
+        border-bottom: 2px dashed #cccccc;
+        padding-bottom: 12px;
+        text-align: center;
+    }
+
+    .donation-main-content {
+        margin: 20px 0;
+        font-size: 1.4em;
+        line-height: 2.2;
+        color: #333;
+    }
+
+    .donate-button {
+        background-color: #006600;
+        color: white;
+        font-size: 1.2em;
+        padding: 14px 30px;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: background-color 0.3s ease, transform 0.2s;
+        display: block;
+        margin: 30px auto 0;
+        font-family: 'Noto Nastaliq Urdu', serif;
+    }
+
+    .donate-button:hover {
+        background-color: #004d00;
+        transform: scale(1.05);
+    }
+
+    .donation-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .donation-modal-content {
+        background: #ffffff;
+        padding: 40px;
+        border-radius: 18px;
+        max-width: 600px;
+        width: 90%;
+        text-align: right;
+        position: relative;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    .modal-close {
+        position: absolute;
+        left: 20px;
+        top: 15px;
+        cursor: pointer;
+        font-size: 28px;
+        color: #666;
+    }
+
+    .modal-close:hover {
+        color: #000;
+    }
+
+    .bank-details {
+        font-size: 1.2em;
+        line-height: 2.2;
+        color: #222;
+    }
+
+    .bank-details h3 {
+        color: #006600;
+        font-size: 1.9em;
+        margin-bottom: 15px;
+    }
+
+    .bank-details h4 {
+        margin-bottom: 20px;
+        font-size: 1.4em;
+        color: #444;
+    }
+
+    .bank-details strong {
+        color: #006600;
+        margin-left: 10px;
+    }
+</style>
+
+
+<!-- HTML Section -->
+<div class="donation-main-card">
+    <h2 class="donation-main-title">بیت المال جماعت اسلامی</h2>
+    <div class="donation-main-content">
+    <p>آپ کے عطیات اقامت دین، مساجد، مدارس، دعوت و تبلیغ، اسلامی تعلیم و تربیت اور دیگر دینی امور کے لیے استعمال کیے جائیں گے۔ آپ کا ہر روپیہ اللہ کی راہ میں صرف ہوگا۔ آئیے! اس نیک کام میں شریک ہوں۔</p>
+        </div>
+    <button class="donate-button">عطیہ دیں</button>
+</div>
+
+<div class="donation-modal">
+    <div class="donation-modal-content">
+        <span class="modal-close">&times;</span>
+        <div class="bank-details">
+            <h3>تفصیلات برائے عطیات</h3>
+            <h4>بینک ٹرانسفر کی معلومات</h4>
+            <p><strong>اکاؤنٹ ٹائیٹل:</strong> Jamaat-e-Islami Pakistan</p>
+            <p><strong>اکاؤنٹ نمبر:</strong> 0102535857</p>
+            <p><strong>IBAN:</strong> PK38MEZN0002010102535857</p>
+            <p><strong>برانچ کوڈ:</strong> 0201</p>
+            <p><strong>بینک:</strong> میزان بینک، گلبرگ برانچ لاہور</p>
+            <p><strong>رابطہ:</strong> مرکزی شعبہ مالیات، منصورہ ملتان روڈ لاہور</p>
+            <p><strong>فون:</strong> +92 42 35419520-4</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    const donateBtn = document.querySelector('.donate-button');
+    const modal = document.querySelector('.donation-modal');
+    const closeBtn = document.querySelector('.modal-close');
+
+    donateBtn.addEventListener('click', () => {
+        modal.style.display = 'flex';
+    });
+
+    closeBtn.addEventListener('click', () => {
+        modal.style.display = 'none';
+    });
+
+    window.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
+</script>

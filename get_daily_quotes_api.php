@@ -1,52 +1,49 @@
 <?php
 function getDailyQuotes() {
+    // Default quotes in case API fails
+    $default_quotes = [
+        'quran' => [
+            'arabic' => 'إِنَّ اللَّهَ لَا يُغَيِّرُ مَا بِقَوْمٍ حَتَّىٰ يُغَيِّرُوا مَا بِأَنفُسِهِمْ',
+            'urdu' => 'بےشک اللہ کسی قوم کی حالت نہیں بدلتا جب تک وہ خود اپنی حالت نہ بدلیں',
+            'reference' => 'سورہ الرعد: آیت ١١'
+        ],
+        'hadith' => [
+            'text' => 'اعمال کا دارومدار نیتوں پر ہے اور ہر شخص کے لیے وہی ہے جس کی اس نے نیت کی',
+            'reference' => 'صحیح بخاری'
+        ]
+    ];
+
     try {
-        // Quran API with both Arabic and Urdu translations
-        $quran_url = "https://api.alquran.cloud/v1/ayah/random/editions/quran-uthmani,ur.ahmedali";
-        $quran_response = file_get_contents($quran_url);
-        $quran_data = json_decode($quran_response, true);
-
-        // Get Arabic and Urdu texts
-        $quran_arabic = $quran_data['data'][0]['text'] ?? '';
-        $quran_urdu = $quran_data['data'][1]['text'] ?? '';
-
-        // Static Hadith in Urdu
-        $hadiths = [
-            [
-                'text' => 'نیت کے بغیر کوئی عمل قبول نہیں ہوتا۔ ہر شخص کو وہی ملے گا جس کی اس نے نیت کی۔',
-                'reference' => 'صحیح بخاری: ١'
-            ],
-            [
-                'text' => 'جو شخص اپنے مسلمان بھائی کی ضرورت پوری کرتا ہے اللہ تعالی اس کی ضرورت پوری کرتا ہے۔',
-                'reference' => 'صحیح بخاری: ٢٤٢٥'
-            ],
-        ];
-
-        $random_hadith = $hadiths[array_rand($hadiths)];
-
-        return [
-            'quran' => [
-                'arabic' => $quran_arabic,
-                'urdu' => $quran_urdu,
-                'reference' => "سورہ " . ($quran_data['data'][0]['surah']['name'] ?? '') . ": " . ($quran_data['data'][0]['numberInSurah'] ?? '')
-            ],
-            'hadith' => [
-                'text' => $random_hadith['text'],
-                'reference' => $random_hadith['reference']
+        // Add timeout to prevent long waiting
+        $ctx = stream_context_create([
+            'http' => [
+                'timeout' => 3
             ]
-        ];
+        ]);
+
+        $quran_response = @file_get_contents(
+            'https://api.alquran.cloud/v1/ayah/random/editions/quran-uthmani,ur.ahmedali',
+            false,
+            $ctx
+        );
+
+        if ($quran_response !== false) {
+            $quran_data = json_decode($quran_response, true);
+            
+            if ($quran_data && $quran_data['code'] === 200) {
+                $default_quotes['quran']['arabic'] = $quran_data['data'][0]['text'];
+                $default_quotes['quran']['urdu'] = $quran_data['data'][1]['text'];
+                $default_quotes['quran']['reference'] = 'سورہ ' . $quran_data['data'][0]['surah']['name'] . ': آیت ' . $quran_data['data'][0]['numberInSurah'];
+            }
+        }
+
+        // You can add hadith API integration here if needed
+
     } catch (Exception $e) {
-        return [
-            'quran' => [
-                'arabic' => 'اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ',
-                'urdu' => 'اللہ کے سوا کوئی معبود نہیں، وہ زندہ ہے، سب کا تھامنے والا ہے',
-                'reference' => 'سورہ البقرة: ٢٥٥'
-            ],
-            'hadith' => [
-                'text' => 'اعمال کا دارومدار نیتوں پر ہے',
-                'reference' => 'صحیح بخاری: ١'
-            ]
-        ];
+        // Log error if needed
+        error_log('API Error: ' . $e->getMessage());
     }
+
+    return $default_quotes;
 }
 ?>
