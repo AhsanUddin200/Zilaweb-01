@@ -144,7 +144,7 @@ $daily_quotes = getDailyQuotes();
                 <i class="fas fa-calendar"></i>
                 <span>تاریخ</span>
             </a>
-            <a href="#" class="nav-item">
+            <a href="taaruf.php" class="nav-item">
                 <i class="fas fa-kaaba"></i>
                 <span>تعارف</span>
             </a>
