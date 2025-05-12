@@ -140,7 +140,7 @@ $daily_quotes = getDailyQuotes();
                 <i class="fas fa-users"></i>
                 <span>قیادت</span>
             </a>
-            <a href="#" class="nav-item">
+            <a href="history.php" class="nav-item">
                 <i class="fas fa-calendar"></i>
                 <span>تاریخ</span>
             </a>
